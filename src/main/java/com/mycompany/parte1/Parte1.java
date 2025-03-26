@@ -31,7 +31,6 @@ public class Parte1 extends JFrame {
                 "Cerradura positiva",
                 "Cerradura de Kleene",
                 "Opcional",
-                "Expresión regular -> AFN",
                 "Unión para analizador léxico",
                 "Convertir AFN a AFD",
                 "Analizar una cadena",
