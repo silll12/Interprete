@@ -34,7 +34,8 @@ public class Parte1 extends JFrame {
                 "Unión para analizador léxico",
                 "Convertir AFN a AFD",
                 "Analizar una cadena",
-                "Probar analizador léxico"
+                "Probar analizador léxico",
+                "Crear AFN desde una expresion regular"
         };
         JComboBox<String> comboBox = new JComboBox<>(opciones);
         comboBox.setPreferredSize(new Dimension(200, 25));
@@ -79,6 +80,9 @@ public class Parte1 extends JFrame {
                 break;
             case "Opcional":
                 panelOpcional();
+                break;
+            case "Convertir AFN a AFD":
+                panelConvertirAFNaAFD();
                 break;
         }
 
@@ -287,6 +291,30 @@ public class Parte1 extends JFrame {
                 }
             }
 
+        });
+    }
+    private void panelConvertirAFNaAFD(){
+        panelNuevo.add(new JLabel("Seleccionar AFN a convertir:"));
+        JComboBox<Integer> comboAFNaAFD= new JComboBox<>(AFNS.keySet().toArray(new Integer[0]));
+        panelNuevo.add(comboAFNaAFD);
+        JButton convertirAFNaAFD= new JButton("Convertir a AFD");
+        panelNuevo.add(convertirAFNaAFD);
+        convertirAFNaAFD.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Integer id= (Integer) comboAFNaAFD.getSelectedItem();
+                    AFN afn = AFNS.get(id);
+                    if(afn==null){
+                        JOptionPane.showMessageDialog(null, "El AFN no fue encontrado");
+                        return;
+                    }
+                    AFD afd = afn.ConvertirAFNaAFD();
+                    JOptionPane.showMessageDialog(null,"Se conviertio el AFN a AFD");
+                } catch (Exception ex){
+                    JOptionPane.showMessageDialog(null, "Error a l convertir" + ex.getMessage());
+                }
+            }
         });
     }
     public static void main(String[] args) {

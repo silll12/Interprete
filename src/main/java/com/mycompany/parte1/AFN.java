@@ -8,8 +8,8 @@ package com.mycompany.parte1;
  *
  * @author silvi
  */
-import java.util.HashSet;
-import java.util.Set;
+import javax.swing.*;
+import java.util.*;
 
 public class AFN {
     public static Set<AFN> ConjDeAFNs =  new HashSet<>();
@@ -169,6 +169,157 @@ public class AFN {
         f.EdosAFN.add(e2);
         f.EdosAcept.add(e2);
         return f;
+    }
+    public HashSet<Estado> CerraduraEpsilon(Estado e){
+        HashSet<Estado> R= new HashSet<Estado>();//conjunto de esstados
+        Stack<Estado> S= new Stack<Estado>();//pil de estados
+        Estado aux, Edo;
+        //dejamos vacios el connjunto de estados y la pila
+        R.clear();
+        S.clear();
+        //estado del que quiero calcular la cerradura
+        S.push(e);
+        //mientras no este vacia
+        while(!S.isEmpty()){
+            aux = S.pop();//sacamos elemento de la pila
+            R.add(aux);//lo agrego al conjunto de estados dado que faltan por revisarse
+            for(Transicion t: aux.getTrans1())
+                if((Edo = t.getEdoTrans(SimbolosEspeciales.EPSILON))!=null)
+                    if(!R.contains(Edo))
+                        S.push(Edo);
+        }
+        return R;
+    }
+    public HashSet<Estado> CerraduraEpsilon(HashSet<Estado> ConjEdos){
+        HashSet<Estado> R= new HashSet<Estado>();//conjunto de esstados
+        Stack<Estado> S= new Stack<Estado>();//pil de estados
+        Estado aux, Edo;
+        //dejamos vacios el connjunto de estados y la pila
+        R.clear();
+        S.clear();
+        for(Estado e: ConjEdos)
+            S.push(e);
+        while(!S.isEmpty()){
+            aux=S.pop();
+            R.add(aux);
+            for(Transicion t: aux.getTrans1())
+                if((Edo=t.getEdoTrans(SimbolosEspeciales.EPSILON)) !=null)
+                    if(!R.contains(Edo))
+                        S.push(Edo);
+        }
+        return R;
+    }
+    public HashSet<Estado> Mover(Estado Edo, char Simb){
+        HashSet<Estado> C= new HashSet<Estado>();
+        Estado Aux;
+        C.clear();
+        //Para cada transicion obtengo para que estado es la transicion
+        for(Transicion t: Edo.getTrans1()){
+            Aux=t.getEdoTrans(Simb);//comprueba si hay transicion con ese simbolo
+            if(Aux!= null) //muestra si hubo una transicion con es simbolo
+                C.add(Aux);
+        }
+        return C;
+    }
+    public HashSet<Estado> Mover(HashSet<Estado> Edos, char Simb){
+        HashSet<Estado> C= new HashSet<Estado>();
+        Estado Aux;
+        C.clear();
+        //Barrer el conjunto de estados
+        for(Estado Edo: Edos)
+            //exactamente lo mismo que lo anterior
+            for (Transicion t: Edo.getTrans1()){
+                Aux=t.getEdoTrans(Simb);//comprueba si hay transicion con ese simbolo
+                if(Aux!= null) //muestra si hubo una transicion con es simbolo
+                    C.add(Aux);
+            }
+        return C;
+    }
+    public HashSet<Estado> Ir_A(HashSet<Estado> Edos, char Simb){
+        HashSet<Estado> C= new HashSet<Estado>();
+        C.clear();
+        HashSet<Estado> MoverEstados= Mover(Edos, Simb);
+        C=CerraduraEpsilon(MoverEstados);
+        return C;
+    }
+
+    public AFD ConvertirAFNaAFD() {
+        AFD afd = new AFD();
+
+        // Estructuras para el algoritmo
+        HashMap<Set<Estado>, Estado> estadosAFD = new HashMap<>();
+        Queue<Set<Estado>> pendientes = new LinkedList<>();
+
+        // Obtener cerradura epsilon del estado inicial del AFN
+        Set<Estado> cerraduraInicial = CerraduraEpsilon(this.EdoIni);
+
+        // Crear el estado inicial del AFD
+        Estado estadoInicialAFD = new Estado();
+        afd.estadoInicial = estadoInicialAFD;
+        afd.estados.add(estadoInicialAFD);
+
+        // Marcar si el estado inicial del AFD es de aceptación
+        for (Estado e : cerraduraInicial) {
+            if (e.getEdoAcept()) {
+                estadoInicialAFD.setEdoAcept(true);
+                afd.estadosAceptacion.add(estadoInicialAFD);
+                break;
+            }
+        }
+
+        // Asociar la cerradura inicial con el estado inicial del AFD
+        estadosAFD.put(cerraduraInicial, estadoInicialAFD);
+        pendientes.add(cerraduraInicial);
+
+        // Copiar el alfabeto del AFN al AFD
+        afd.alfabeto.addAll(this.Alfabeto);
+
+        // Procesar todos los conjuntos de estados pendientes
+        while (!pendientes.isEmpty()) {
+            Set<Estado> conjuntoActual = pendientes.poll();
+            Estado estadoActualAFD = estadosAFD.get(conjuntoActual);
+
+            // Para cada símbolo del alfabeto
+            for (Character simbolo : this.Alfabeto) {
+                // Ignorar el símbolo epsilon
+                if (simbolo == SimbolosEspeciales.EPSILON) {
+                    continue;
+                }
+
+                // Calcular Ir_A(conjuntoActual, simbolo)
+                Set<Estado> conjuntoDestino = Ir_A(new HashSet<>(conjuntoActual), simbolo);
+
+                // Si el resultado no es vacío
+                if (!conjuntoDestino.isEmpty()) {
+                    // Verificar si ya existe este conjunto de estados
+                    if (!estadosAFD.containsKey(conjuntoDestino)) {
+                        // Crear nuevo estado para el AFD
+                        Estado nuevoEstadoAFD = new Estado();
+
+                        // Verificar si el nuevo estado debe ser de aceptación
+                        for (Estado e : conjuntoDestino) {
+                            if (e.getEdoAcept()) {
+                                nuevoEstadoAFD.setEdoAcept(true);
+                                afd.estadosAceptacion.add(nuevoEstadoAFD);
+                                break;
+                            }
+                        }
+
+                        // Agregar el nuevo estado al AFD
+                        afd.estados.add(nuevoEstadoAFD);
+                        estadosAFD.put(conjuntoDestino, nuevoEstadoAFD);
+                        pendientes.add(conjuntoDestino);
+                    }
+
+                    // Agregar la transición desde el estado actual al estado destino con el símbolo actual
+                    Estado estadoDestinoAFD = estadosAFD.get(conjuntoDestino);
+                    Transicion nuevaTransicion = new Transicion(simbolo, estadoDestinoAFD);
+                    estadoActualAFD.agregarTransicion(nuevaTransicion);
+                }
+            }
+        }
+
+        return afd;
     }
 
 }
