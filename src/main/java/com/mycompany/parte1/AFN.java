@@ -1,15 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.parte1;
 
-/**
- *
- * @author silvi
- */
 import javax.swing.*;
 import java.util.*;
+import java.util.Queue;
 
 public class AFN {
     public static Set<AFN> ConjDeAFNs =  new HashSet<>();
@@ -170,6 +163,9 @@ public class AFN {
         f.EdosAcept.add(e2);
         return f;
     }
+
+
+    //Metodos para pasar de AFN a AFD
     public HashSet<Estado> CerraduraEpsilon(Estado e){
         HashSet<Estado> R= new HashSet<Estado>();//conjunto de esstados
         Stack<Estado> S= new Stack<Estado>();//pil de estados
@@ -235,91 +231,132 @@ public class AFN {
             }
         return C;
     }
-    public HashSet<Estado> Ir_A(HashSet<Estado> Edos, char Simb){
-        HashSet<Estado> C= new HashSet<Estado>();
-        C.clear();
-        HashSet<Estado> MoverEstados= Mover(Edos, Simb);
-        C=CerraduraEpsilon(MoverEstados);
-        return C;
+    public HashSet<Estado> Ir_A(HashSet<Estado> Edos, char Simb) {
+        HashSet<Estado> MoverEstados = Mover(Edos, Simb);
+        return CerraduraEpsilon(MoverEstados);
+    }
+
+
+    private int IndiceCaracter(char[] ArregloAlfabeto, char c){
+        int i;
+        for(i=0; i<ArregloAlfabeto.length; i++)
+            if(ArregloAlfabeto[i]==c)
+                return i;
+        return -1;
     }
 
     public AFD ConvertirAFNaAFD() {
+        int CardAlfabeto, NumEdosAFD;
+        int i, j, r;
+        char[] ArrAlfabeto;
+        ConjIj Ij, Ik;
+        boolean existe;
+
+        HashSet<Estado> ConjAux = new HashSet<>();
+        HashSet<ConjIj> EdosAFD = new HashSet<>();
+        Queue<ConjIj> EdosSinAnalizar = new LinkedList<>();
+
+        // Create new AFD object
         AFD afd = new AFD();
 
-        // Estructuras para el algoritmo
-        HashMap<Set<Estado>, Estado> estadosAFD = new HashMap<>();
-        Queue<Set<Estado>> pendientes = new LinkedList<>();
-
-        // Obtener cerradura epsilon del estado inicial del AFN
-        Set<Estado> cerraduraInicial = CerraduraEpsilon(this.EdoIni);
-
-        // Crear el estado inicial del AFD
-        Estado estadoInicialAFD = new Estado();
-        afd.estadoInicial = estadoInicialAFD;
-        afd.estados.add(estadoInicialAFD);
-
-        // Marcar si el estado inicial del AFD es de aceptación
-        for (Estado e : cerraduraInicial) {
-            if (e.getEdoAcept()) {
-                estadoInicialAFD.setEdoAcept(true);
-                afd.estadosAceptacion.add(estadoInicialAFD);
-                break;
-            }
+        // Copy alphabet to array for easier access
+        CardAlfabeto = Alfabeto.size();
+        ArrAlfabeto = new char[CardAlfabeto];
+        i = 0;
+        for (char c : Alfabeto) {
+            ArrAlfabeto[i++] = c;
         }
 
-        // Asociar la cerradura inicial con el estado inicial del AFD
-        estadosAFD.put(cerraduraInicial, estadoInicialAFD);
-        pendientes.add(cerraduraInicial);
+        // Start with epsilon closure of initial state
+        j = 0;
+        Ij = new ConjIj(CardAlfabeto);
+        Ij.ConjI = CerraduraEpsilon(this.EdoIni);
+        Ij.j = j;
 
-        // Copiar el alfabeto del AFN al AFD
-        afd.alfabeto.addAll(this.Alfabeto);
+        EdosAFD.add(Ij);
+        EdosSinAnalizar.add(Ij);
+        j++;
 
-        // Procesar todos los conjuntos de estados pendientes
-        while (!pendientes.isEmpty()) {
-            Set<Estado> conjuntoActual = pendientes.poll();
-            Estado estadoActualAFD = estadosAFD.get(conjuntoActual);
+        while (!EdosSinAnalizar.isEmpty()) {
+            Ij = EdosSinAnalizar.poll();
 
-            // Para cada símbolo del alfabeto
-            for (Character simbolo : this.Alfabeto) {
-                // Ignorar el símbolo epsilon
-                if (simbolo == SimbolosEspeciales.EPSILON) {
+            for (char c : ArrAlfabeto) {
+                Ik = new ConjIj(CardAlfabeto);
+                Ik.ConjI = Ir_A( Ij.ConjI, c);
+
+                if (Ik.ConjI.isEmpty()) {
                     continue;
                 }
 
-                // Calcular Ir_A(conjuntoActual, simbolo)
-                Set<Estado> conjuntoDestino = Ir_A(new HashSet<>(conjuntoActual), simbolo);
-
-                // Si el resultado no es vacío
-                if (!conjuntoDestino.isEmpty()) {
-                    // Verificar si ya existe este conjunto de estados
-                    if (!estadosAFD.containsKey(conjuntoDestino)) {
-                        // Crear nuevo estado para el AFD
-                        Estado nuevoEstadoAFD = new Estado();
-
-                        // Verificar si el nuevo estado debe ser de aceptación
-                        for (Estado e : conjuntoDestino) {
-                            if (e.getEdoAcept()) {
-                                nuevoEstadoAFD.setEdoAcept(true);
-                                afd.estadosAceptacion.add(nuevoEstadoAFD);
-                                break;
-                            }
-                        }
-
-                        // Agregar el nuevo estado al AFD
-                        afd.estados.add(nuevoEstadoAFD);
-                        estadosAFD.put(conjuntoDestino, nuevoEstadoAFD);
-                        pendientes.add(conjuntoDestino);
+                existe = false;
+                for (ConjIj I : EdosAFD) {
+                    if (I.ConjI.equals(Ik.ConjI)) {
+                        existe = true;
+                        r = IndiceCaracter(ArrAlfabeto, c);
+                        Ij.TransicionesAFD[r] = I.j;
+                        break;
                     }
+                }
 
-                    // Agregar la transición desde el estado actual al estado destino con el símbolo actual
-                    Estado estadoDestinoAFD = estadosAFD.get(conjuntoDestino);
-                    Transicion nuevaTransicion = new Transicion(simbolo, estadoDestinoAFD);
-                    estadoActualAFD.agregarTransicion(nuevaTransicion);
+                if (!existe) {
+                    Ik.j = j;
+                    r = IndiceCaracter(ArrAlfabeto, c);
+                    Ij.TransicionesAFD[r] = Ik.j;
+                    EdosAFD.add(Ik);
+                    EdosSinAnalizar.add(Ik);
+                    j++;
+                }
+            }
+        }
+
+        // Now build the AFD from the computed states
+        afd.alfabeto = new HashSet<>(this.Alfabeto);
+
+        // Create states for AFD
+        NumEdosAFD = EdosAFD.size();
+        Estado[] estados = new Estado[NumEdosAFD];
+        for (ConjIj I : EdosAFD) {
+            estados[I.j] = new Estado();
+            if (I.ConjuntoAceptacion()) {
+                estados[I.j].setEdoAcept(true);
+                afd.estadosAceptacion.add(estados[I.j]);
+            }
+            afd.estados.add(estados[I.j]);
+        }
+
+        // Initial state is the first one
+        afd.estadoInicial = estados[0];
+
+        // Set transitions
+        for (ConjIj I : EdosAFD) {
+            for (i = 0; i < CardAlfabeto; i++) {
+                if (I.TransicionesAFD[i] >= 0) {
+                    Transicion t = new Transicion(ArrAlfabeto[i], estados[I.TransicionesAFD[i]]);
+                    estados[I.j].agregarTransicion(t);
                 }
             }
         }
 
         return afd;
     }
-
+    //Finalizacion de los metodos para pasar de AFN a AFD
+    public void UnionEspecialAFNs(AFN f, int Token){
+        Estado e;
+        if(this.AgregoAFNUnionLexico){
+            this.EdosAFN.clear();
+            this.Alfabeto.clear();
+            e=new Estado();
+            e.getTrans1().add(new Transicion(SimbolosEspeciales.EPSILON, f.EdoIni));
+            this.EdoIni=e;
+            this.EdosAFN.add(e);
+            this.AgregoAFNUnionLexico=true;
+        }
+        else
+            this.EdoIni.getTrans1().add(new Transicion(SimbolosEspeciales.EPSILON,f.EdoIni));
+        for(Estado EdoAcep : f.EdosAcept)
+            EdoAcep.setToken1(Token);
+        this.EdosAcept.addAll(f.EdosAcept);
+        this.EdosAFN.addAll(f.EdosAFN);
+        this.Alfabeto.addAll(f.Alfabeto);
+    }
 }

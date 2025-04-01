@@ -20,6 +20,7 @@ public class Estado {
 
     private int idEstado1;
     private boolean edoAcept1;
+    private int Token1;
     private Set<Transicion> trans1 = new HashSet<>();
 
     public Estado() {
@@ -27,6 +28,8 @@ public class Estado {
         this.edoAcept1 = false;
     }
 
+    public int getToken1() {return Token1;}
+    public void setToken1(int token1) {Token1 = token1;}
     public Set<Transicion> getTrans1() {
         return trans1;
     }

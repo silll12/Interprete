@@ -1,18 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
-
 package com.mycompany.parte1;
 
-/**
- *
- * @author silvi
- */
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.table.DefaultTableModel;
 
 public class Parte1 extends JFrame {
     private JPanel panelNuevo;
@@ -31,11 +26,11 @@ public class Parte1 extends JFrame {
                 "Cerradura positiva",
                 "Cerradura de Kleene",
                 "Opcional",
-                "Unión para analizador léxico",
+                "Unión Especial",//Union para anlizador Lexico
                 "Convertir AFN a AFD",
                 "Analizar una cadena",
                 "Probar analizador léxico",
-                "Crear AFN desde una expresion regular"
+                "Crear AFN desde una expresión regular"
         };
         JComboBox<String> comboBox = new JComboBox<>(opciones);
         comboBox.setPreferredSize(new Dimension(200, 25));
@@ -84,17 +79,20 @@ public class Parte1 extends JFrame {
             case "Convertir AFN a AFD":
                 panelConvertirAFNaAFD();
                 break;
+            case "Unión Especial":
+                panelUnionEspecialAFN();
+                break;
         }
 
         panelNuevo.revalidate();
         panelNuevo.repaint();
     }
     private void panelAFNBasico(){
-        panelNuevo.add(new JLabel("Caracter inferior:"));
+        panelNuevo.add(new JLabel("Carácter inferior:"));
         JTextField simboloInferior = new JTextField();
         panelNuevo.add(simboloInferior);
 
-        panelNuevo.add(new JLabel("Caracter superior:"));
+        panelNuevo.add(new JLabel("Carácter superior:"));
         JTextField simboloSuperior = new JTextField();
         panelNuevo.add(simboloSuperior);
 
@@ -232,7 +230,7 @@ public class Parte1 extends JFrame {
         });
     }
     private void panelConcatenar(){
-        panelNuevo.add(new JLabel("seleccionar AFN 1:"));
+        panelNuevo.add(new JLabel("Seleccionar AFN 1:"));
         JComboBox<Integer> comboAFN1 = new JComboBox<>(AFNS.keySet().toArray(new Integer[0]));
         panelNuevo.add(comboAFN1);
         panelNuevo.add(new JLabel("Seleccionar AFN2:"));
@@ -310,9 +308,109 @@ public class Parte1 extends JFrame {
                         return;
                     }
                     AFD afd = afn.ConvertirAFNaAFD();
-                    JOptionPane.showMessageDialog(null,"Se conviertio el AFN a AFD");
+                    JOptionPane.showMessageDialog(null,"Se convirtió el AFN a AFD");
                 } catch (Exception ex){
                     JOptionPane.showMessageDialog(null, "Error a l convertir" + ex.getMessage());
+                }
+            }
+        });
+    }
+    private void panelUnionEspecialAFN() {
+        // Limpiar el panel y configurar layout
+        panelNuevo.removeAll();
+        panelNuevo.setLayout(new BorderLayout());
+        // Creamos el modelo para la tabla
+        String[] columnNames = {"ID", "Seleccionar AFN", "Token AFN"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+
+        // Crear el JTable con el modelo
+        JTable table = new JTable(tableModel);
+        table.setRowHeight(30); // Aumentar altura de las filas
+        table.setFont(new Font("Arial", Font.PLAIN, 14)); // Fuente más grande
+
+        // Hacer que la columna "Seleccionar AFN" tenga un JCheckBox
+        table.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(new JCheckBox()));
+
+        // Agregamos los AFNs a la tabla mostrando los tokens
+        for (Integer id : AFNS.keySet()) {
+            AFN afn = AFNS.get(id);
+            int token = -1;
+            if (!afn.EdosAcept.isEmpty()) {
+                token = afn.EdosAcept.iterator().next().getToken1();
+            }
+            tableModel.addRow(new Object[]{id, false, token});
+        }
+
+        // Crear un JScrollPane para la tabla con tamaño preferido
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setPreferredSize(new Dimension(450, 300)); // Tamaño más grande
+
+        // Panel para los controles inferiores
+        JPanel panelControles = new JPanel(new FlowLayout());
+
+        // Botón para unir los AFNs
+        JButton unirButton = new JButton("Unir AFNs Seleccionados");
+        unirButton.setFont(new Font("Arial", Font.BOLD, 14)); // Fuente más grande
+        panelControles.add(unirButton);
+
+        // Agregar componentes al panel principal
+        panelNuevo.add(scrollPane, BorderLayout.CENTER);
+        panelNuevo.add(panelControles, BorderLayout.SOUTH);
+        unirButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    // Crear una lista para los AFNs seleccionados
+                    List<AFN> afnsSeleccionados = new ArrayList<>();
+                    List<Integer> idsSeleccionados = new ArrayList<>();
+
+                    // Recorrer las filas de la tabla para obtener los AFNs seleccionados
+                    for (int i = 0; i < table.getRowCount(); i++) {
+                        boolean seleccionado = (boolean) table.getValueAt(i, 1);
+                        if (seleccionado) {
+                            Integer id = (Integer) table.getValueAt(i, 0);
+                            AFN afn = AFNS.get(id);
+                            if (afn != null) {
+                                afnsSeleccionados.add(afn);
+                                idsSeleccionados.add(id);
+                            }
+                        }
+                    }
+
+                    if (afnsSeleccionados.size() < 2) {
+                        JOptionPane.showMessageDialog(null, "Debe seleccionar al menos dos AFNs.");
+                        return;
+                    }
+
+                    // Encontrar el ID más bajo entre los AFNs seleccionados
+                    int idMinimo = idsSeleccionados.stream().min(Integer::compare).orElseThrow();
+
+                    // Obtener el token del primer AFN seleccionado (del primer estado de aceptación)
+                    int tokenConservado = -1;
+                    if (!afnsSeleccionados.get(0).EdosAcept.isEmpty()) {
+                        tokenConservado = afnsSeleccionados.get(0).EdosAcept.iterator().next().getToken1();
+                    }
+
+                    // Crear un nuevo AFN que será la unión de todos los seleccionados
+                    AFN afnBase = afnsSeleccionados.get(0);
+                    for (int i = 1; i < afnsSeleccionados.size(); i++) {
+                        afnBase.UnionEspecialAFNs(afnsSeleccionados.get(i), tokenConservado);
+                    }
+
+                    // Asignar el ID más bajo al nuevo AFN
+                    afnBase.IdAFN = idMinimo;
+
+                    // Eliminar los AFNs que ya fueron unidos
+                    for (Integer id : idsSeleccionados) {
+                        AFNS.remove(id);
+                    }
+
+                    // Agregar el nuevo AFN con el ID más bajo
+                    AFNS.put(idMinimo, afnBase);
+
+                    JOptionPane.showMessageDialog(null, "AFNs unidos exitosamente. Token asignado: " + tokenConservado);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "Error al unir los AFNs: " + ex.getMessage());
                 }
             }
         });
