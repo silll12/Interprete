@@ -256,10 +256,8 @@ public class AFN {
         HashSet<ConjIj> EdosAFD = new HashSet<>();
         Queue<ConjIj> EdosSinAnalizar = new LinkedList<>();
 
-        // Create new AFD object
         AFD afd = new AFD();
 
-        // Copy alphabet to array for easier access
         CardAlfabeto = Alfabeto.size();
         ArrAlfabeto = new char[CardAlfabeto];
         i = 0;
@@ -267,7 +265,7 @@ public class AFN {
             ArrAlfabeto[i++] = c;
         }
 
-        // Start with epsilon closure of initial state
+
         j = 0;
         Ij = new ConjIj(CardAlfabeto);
         Ij.ConjI = CerraduraEpsilon(this.EdoIni);
@@ -309,10 +307,8 @@ public class AFN {
             }
         }
 
-        // Now build the AFD from the computed states
         afd.alfabeto = new HashSet<>(this.Alfabeto);
 
-        // Create states for AFD
         NumEdosAFD = EdosAFD.size();
         Estado[] estados = new Estado[NumEdosAFD];
         for (ConjIj I : EdosAFD) {
@@ -324,10 +320,8 @@ public class AFN {
             afd.estados.add(estados[I.j]);
         }
 
-        // Initial state is the first one
         afd.estadoInicial = estados[0];
 
-        // Set transitions
         for (ConjIj I : EdosAFD) {
             for (i = 0; i < CardAlfabeto; i++) {
                 if (I.TransicionesAFD[i] >= 0) {
@@ -340,21 +334,26 @@ public class AFN {
         return afd;
     }
     //Finalizacion de los metodos para pasar de AFN a AFD
-    public void UnionEspecialAFNs(AFN f, int Token){
+    public void UnionEspecialAFNs(AFN f, int Token) {
         Estado e;
-        if(this.AgregoAFNUnionLexico){
+        if(this.AgregoAFNUnionLexico) {
             this.EdosAFN.clear();
             this.Alfabeto.clear();
-            e=new Estado();
+            e = new Estado();
             e.getTrans1().add(new Transicion(SimbolosEspeciales.EPSILON, f.EdoIni));
-            this.EdoIni=e;
+            this.EdoIni = e;
             this.EdosAFN.add(e);
-            this.AgregoAFNUnionLexico=true;
+            this.AgregoAFNUnionLexico = true;
         }
-        else
-            this.EdoIni.getTrans1().add(new Transicion(SimbolosEspeciales.EPSILON,f.EdoIni));
-        for(Estado EdoAcep : f.EdosAcept)
+        else {
+            this.EdoIni.getTrans1().add(new Transicion(SimbolosEspeciales.EPSILON, f.EdoIni));
+        }
+
+        // Establecer el token para los estados de aceptación del AFN que se está uniendo
+        for(Estado EdoAcep : f.EdosAcept) {
             EdoAcep.setToken1(Token);
+        }
+
         this.EdosAcept.addAll(f.EdosAcept);
         this.EdosAFN.addAll(f.EdosAFN);
         this.Alfabeto.addAll(f.Alfabeto);

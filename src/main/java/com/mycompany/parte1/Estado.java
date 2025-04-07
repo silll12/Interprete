@@ -20,7 +20,7 @@ public class Estado {
 
     private int idEstado1;
     private boolean edoAcept1;
-    private int Token1;
+    private int Token1=-1;
     private Set<Transicion> trans1 = new HashSet<>();
 
     public Estado() {

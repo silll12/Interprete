@@ -81,6 +81,7 @@ public class Parte1 extends JFrame {
                 break;
             case "Unión Especial":
                 panelUnionEspecialAFN();
+
                 break;
         }
 
@@ -319,17 +320,27 @@ public class Parte1 extends JFrame {
         // Limpiar el panel y configurar layout
         panelNuevo.removeAll();
         panelNuevo.setLayout(new BorderLayout());
+
         // Creamos el modelo para la tabla
         String[] columnNames = {"ID", "Seleccionar AFN", "Token AFN"};
-        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                // Make the second column (index 1) use checkboxes
+                return columnIndex == 1 ? Boolean.class : Object.class;
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // Allow editing checkbox column and token column
+                return column == 1 || column == 2;
+            }
+        };
 
         // Crear el JTable con el modelo
         JTable table = new JTable(tableModel);
         table.setRowHeight(30); // Aumentar altura de las filas
         table.setFont(new Font("Arial", Font.PLAIN, 14)); // Fuente más grande
-
-        // Hacer que la columna "Seleccionar AFN" tenga un JCheckBox
-        table.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(new JCheckBox()));
 
         // Agregamos los AFNs a la tabla mostrando los tokens
         for (Integer id : AFNS.keySet()) {
@@ -356,23 +367,29 @@ public class Parte1 extends JFrame {
         // Agregar componentes al panel principal
         panelNuevo.add(scrollPane, BorderLayout.CENTER);
         panelNuevo.add(panelControles, BorderLayout.SOUTH);
+
         unirButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    // Crear una lista para los AFNs seleccionados
+                    // Crear listas para los AFNs seleccionados y sus tokens
                     List<AFN> afnsSeleccionados = new ArrayList<>();
                     List<Integer> idsSeleccionados = new ArrayList<>();
+                    List<Integer> tokensSeleccionados = new ArrayList<>();
 
                     // Recorrer las filas de la tabla para obtener los AFNs seleccionados
                     for (int i = 0; i < table.getRowCount(); i++) {
                         boolean seleccionado = (boolean) table.getValueAt(i, 1);
                         if (seleccionado) {
                             Integer id = (Integer) table.getValueAt(i, 0);
+                            // Obtener el token desde la tabla (puede haber sido editado)
+                            Integer token = Integer.parseInt(table.getValueAt(i, 2).toString());
+
                             AFN afn = AFNS.get(id);
                             if (afn != null) {
                                 afnsSeleccionados.add(afn);
                                 idsSeleccionados.add(id);
+                                tokensSeleccionados.add(token);
                             }
                         }
                     }
@@ -385,30 +402,50 @@ public class Parte1 extends JFrame {
                     // Encontrar el ID más bajo entre los AFNs seleccionados
                     int idMinimo = idsSeleccionados.stream().min(Integer::compare).orElseThrow();
 
-                    // Obtener el token del primer AFN seleccionado (del primer estado de aceptación)
-                    int tokenConservado = -1;
-                    if (!afnsSeleccionados.get(0).EdosAcept.isEmpty()) {
-                        tokenConservado = afnsSeleccionados.get(0).EdosAcept.iterator().next().getToken1();
+                    // Usar el primer AFN como base
+                    AFN afnBase = afnsSeleccionados.get(0);
+
+                    // Unir los AFNs restantes usando el token correspondiente de cada uno
+                    for (int i = 1; i < afnsSeleccionados.size(); i++) {
+                        AFN afnActual = afnsSeleccionados.get(i);
+                        int tokenActual = tokensSeleccionados.get(i);
+
+                        // Usar el token específico para cada AFN que se está uniendo
+                        afnBase.UnionEspecialAFNs(afnActual, tokenActual);
                     }
 
-                    // Crear un nuevo AFN que será la unión de todos los seleccionados
-                    AFN afnBase = afnsSeleccionados.get(0);
-                    for (int i = 1; i < afnsSeleccionados.size(); i++) {
-                        afnBase.UnionEspecialAFNs(afnsSeleccionados.get(i), tokenConservado);
+                    // Establecer el token del AFN base (el primer AFN seleccionado)
+                    if (!afnBase.EdosAcept.isEmpty()) {
+                        for (Estado estado : afnBase.EdosAcept) {
+                            if (estado.getToken1() == -1) {
+                                estado.setToken1(tokensSeleccionados.get(0));
+                            }
+                        }
                     }
 
                     // Asignar el ID más bajo al nuevo AFN
                     afnBase.IdAFN = idMinimo;
 
-                    // Eliminar los AFNs que ya fueron unidos
-                    for (Integer id : idsSeleccionados) {
-                        AFNS.remove(id);
+                    // Eliminar los AFNs que ya fueron unidos excepto el base
+                    for (int i = 1; i < idsSeleccionados.size(); i++) {
+                        AFNS.remove(idsSeleccionados.get(i));
                     }
 
-                    // Agregar el nuevo AFN con el ID más bajo
+                    // Actualizar o mantener el AFN base con el ID más bajo
                     AFNS.put(idMinimo, afnBase);
 
-                    JOptionPane.showMessageDialog(null, "AFNs unidos exitosamente. Token asignado: " + tokenConservado);
+
+                    // Actualizar la tabla principal después de la operación
+                    tableModel.setRowCount(0);
+                    for (Integer id : AFNS.keySet()) {
+                        AFN afn = AFNS.get(id);
+                        int token = -1;
+                        if (!afn.EdosAcept.isEmpty()) {
+                            token = afn.EdosAcept.iterator().next().getToken1();
+                        }
+                        tableModel.addRow(new Object[]{id, false, token});
+                    }
+
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(null, "Error al unir los AFNs: " + ex.getMessage());
                 }
