@@ -122,6 +122,7 @@ public class AFN {
         f.EdosAFN.add(e1);
         f.EdosAFN.add(e2);
         f.EdosAcept.add(e2);
+        f.Alfabeto.addAll(this.Alfabeto);
         return f;
     }
     public AFN CerraduraKleene(){
@@ -139,9 +140,11 @@ public class AFN {
         }
         e2.setEdoAcept(true);
         f.EdoIni=  e1;
+        f.EdosAFN.addAll(this.EdosAFN);
         f.EdosAFN.add(e1);
         f.EdosAFN.add(e2);
         f.EdosAcept.add(e2);
+        f.Alfabeto.addAll(this.Alfabeto);
         return f;
     }
     public AFN CerraduraPositiva(){
@@ -157,10 +160,12 @@ public class AFN {
             e.setEdoAcept(false);
         }
         e2.setEdoAcept(true);
-        f.EdoIni=  e1;
+        f.EdoIni = e1;
+        f.EdosAFN.addAll(this.EdosAFN);  // Añadido para preservar todos los estados
         f.EdosAFN.add(e1);
         f.EdosAFN.add(e2);
         f.EdosAcept.add(e2);
+        f.Alfabeto.addAll(this.Alfabeto);  // Añadido para preservar el alfabeto
         return f;
     }
 
@@ -249,12 +254,12 @@ public class AFN {
         int CardAlfabeto, NumEdosAFD;
         int i, j, r;
         char[] ArrAlfabeto;
-        Conjlj Ij, Ik;
+        ConjIj Ij, Ik;
         boolean existe;
 
         HashSet<Estado> ConjAux = new HashSet<>();
-        HashSet<Conjlj> EdosAFD = new HashSet<>();
-        Queue<Conjlj> EdosSinAnalizar = new LinkedList<>();
+        HashSet<ConjIj> EdosAFD = new HashSet<>();
+        Queue<ConjIj> EdosSinAnalizar = new LinkedList<>();
 
         AFD afd = new AFD();
 
@@ -267,7 +272,7 @@ public class AFN {
 
 
         j = 0;
-        Ij = new Conjlj(CardAlfabeto);
+        Ij = new ConjIj(CardAlfabeto);
         Ij.ConjI = CerraduraEpsilon(this.EdoIni);
         Ij.j = j;
 
@@ -279,7 +284,7 @@ public class AFN {
             Ij = EdosSinAnalizar.poll();
 
             for (char c : ArrAlfabeto) {
-                Ik = new Conjlj(CardAlfabeto);
+                Ik = new ConjIj(CardAlfabeto);
                 Ik.ConjI = Ir_A( Ij.ConjI, c);
 
                 if (Ik.ConjI.isEmpty()) {
@@ -287,7 +292,7 @@ public class AFN {
                 }
 
                 existe = false;
-                for (Conjlj I : EdosAFD) {
+                for (ConjIj I : EdosAFD) {
                     if (I.ConjI.equals(Ik.ConjI)) {
                         existe = true;
                         r = IndiceCaracter(ArrAlfabeto, c);
@@ -311,18 +316,21 @@ public class AFN {
 
         NumEdosAFD = EdosAFD.size();
         Estado[] estados = new Estado[NumEdosAFD];
-        for (Conjlj I : EdosAFD) {
-            estados[I.j] = new Estado();
-            if (I.ConjuntoAceptacion()) {
-                estados[I.j].setEdoAcept(true);
-                afd.estadosAceptacion.add(estados[I.j]);
+
+            for (ConjIj I : EdosAFD) {
+                estados[I.j] = new Estado();
+                if (I.ConjuntoAceptacion()) {
+                    estados[I.j].setEdoAcept(true);
+                    estados[I.j].setToken1(I.obtenerTokenAceptacion()); // Añade esta línea
+                    afd.estadosAceptacion.add(estados[I.j]);
+                }
+                afd.estados.add(estados[I.j]);
             }
-            afd.estados.add(estados[I.j]);
-        }
+
 
         afd.estadoInicial = estados[0];
 
-        for (Conjlj I : EdosAFD) {
+        for (ConjIj I : EdosAFD) {
             for (i = 0; i < CardAlfabeto; i++) {
                 if (I.TransicionesAFD[i] >= 0) {
                     Transicion t = new Transicion(ArrAlfabeto[i], estados[I.TransicionesAFD[i]]);
