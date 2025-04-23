@@ -14,8 +14,7 @@ public class AFD {
         alfabeto = new HashSet<>();
     }
 
-    //Metodo para verificar si una cadena es aceptada por este AFD.
-
+    // Método para verificar si una cadena es aceptada por este AFD
     public boolean analizarCadena(String cadena) {
         Estado estadoActual = estadoInicial;
 
@@ -49,15 +48,22 @@ public class AFD {
         return estadosAceptacion.contains(estadoActual);
     }
 
-    //Metodo para obtener el número de estados.
-
+    // Métodos para obtener el número de estados.
     public int obtenerNumeroDeEstados() {
         return estados.size();
     }
 
-    // Metodo para obtener el número de estados de aceptación.
-
     public int obtenerNumeroDeEstadosDeAceptacion() {
         return estadosAceptacion.size();
+    }
+
+    // Método para obtener los estado de aceptación
+    public boolean EstadoAceptacion(Estado estado) {
+        return estadosAceptacion.contains(estado);
+    }
+
+    // Método para obtener el token del estado de aceptación
+    public String ObtenerToken(Estado estado) {
+        return EstadoAceptacion(estado) ? String.valueOf(estado.getToken1()) : "-1";
     }
 }

@@ -90,9 +90,9 @@ public class AFN {
     public AFN ConcAFN(AFN f2){
         // Para cada estado de aceptación de `this`, añadimos una transición epsilon hacia el estado inicial de `f2`
         for(Estado e : this.EdosAcept){
-                e.agregarTransicion(new Transicion(SimbolosEspeciales.EPSILON,f2.EdoIni));
-                e.setEdoAcept(false);
-            }
+            e.agregarTransicion(new Transicion(SimbolosEspeciales.EPSILON,f2.EdoIni));
+            e.setEdoAcept(false);
+        }
         //Eliminamos el estado inicial de f2 de su lista de estados
         f2.EdosAFN.remove(f2.EdoIni);
         //Unimos los estados de transicion de f2 en this
@@ -122,6 +122,7 @@ public class AFN {
         f.EdosAFN.add(e1);
         f.EdosAFN.add(e2);
         f.EdosAcept.add(e2);
+        f.Alfabeto.addAll(this.Alfabeto);
         return f;
     }
     public AFN CerraduraKleene(){
@@ -139,9 +140,11 @@ public class AFN {
         }
         e2.setEdoAcept(true);
         f.EdoIni=  e1;
+        f.EdosAFN.addAll(this.EdosAFN);
         f.EdosAFN.add(e1);
         f.EdosAFN.add(e2);
         f.EdosAcept.add(e2);
+        f.Alfabeto.addAll(this.Alfabeto);
         return f;
     }
     public AFN CerraduraPositiva(){
@@ -157,10 +160,12 @@ public class AFN {
             e.setEdoAcept(false);
         }
         e2.setEdoAcept(true);
-        f.EdoIni=  e1;
+        f.EdoIni = e1;
+        f.EdosAFN.addAll(this.EdosAFN);  // Añadido para preservar todos los estados
         f.EdosAFN.add(e1);
         f.EdosAFN.add(e2);
         f.EdosAcept.add(e2);
+        f.Alfabeto.addAll(this.Alfabeto);  // Añadido para preservar el alfabeto
         return f;
     }
 
@@ -311,14 +316,17 @@ public class AFN {
 
         NumEdosAFD = EdosAFD.size();
         Estado[] estados = new Estado[NumEdosAFD];
+
         for (ConjIj I : EdosAFD) {
             estados[I.j] = new Estado();
             if (I.ConjuntoAceptacion()) {
                 estados[I.j].setEdoAcept(true);
+                estados[I.j].setToken1(I.obtenerTokenAceptacion()); // Añade esta línea
                 afd.estadosAceptacion.add(estados[I.j]);
             }
             afd.estados.add(estados[I.j]);
         }
+
 
         afd.estadoInicial = estados[0];
 

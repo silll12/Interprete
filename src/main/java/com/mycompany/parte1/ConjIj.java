@@ -35,9 +35,16 @@ public class ConjIj {
         return this.ConjI.equals(other.ConjI);
     }
 
-    //Genera un código hash basado en el conjunto de estados.
     @Override
     public int hashCode() {
         return ConjI.hashCode();
+    }
+    public int obtenerTokenAceptacion() {
+        for (Estado e : ConjI) {
+            if (e.getEdoAcept()) {
+                return e.getToken1();
+            }
+        }
+        return -1;
     }
 }
