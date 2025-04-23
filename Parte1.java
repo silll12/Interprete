@@ -135,6 +135,7 @@ public class Parte1 extends JFrame {
                         AFNS.put(id, afn);
                         JOptionPane.showMessageDialog(null, "AFN creado");
                     }
+
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(null, "No se pudo crear automáta");
                 }
@@ -199,7 +200,6 @@ public class Parte1 extends JFrame {
                     AFNS.put(id, nuevoAFN);
 
                     JOptionPane.showMessageDialog(null, "Se aplicó Cerradura Positiva");
-
                 }
                 catch(Exception ex){
                     JOptionPane.showMessageDialog(null, "No se puede aplicar la Cerradura positiva" + ex.getMessage());
@@ -285,7 +285,6 @@ public class Parte1 extends JFrame {
                     AFN nuevoAFN = afn.Opcional();
                     AFNS.put(id, nuevoAFN);
                     JOptionPane.showMessageDialog(null, "Se aplicó Opcional");
-
                 }
                 catch(Exception ex){
                     JOptionPane.showMessageDialog(null, "No se puede aplicar el Opcional" + ex.getMessage());
@@ -295,66 +294,66 @@ public class Parte1 extends JFrame {
         });
     }
     private void panelConvertirAFNaAFD() {
-         panelNuevo.add(new JLabel("Seleccionar AFN a convertir:"));
+        panelNuevo.add(new JLabel("Seleccionar AFN a convertir:"));
         JComboBox<Integer> comboAFNaAFD = new JComboBox<>(AFNS.keySet().toArray(new Integer[0]));
         panelNuevo.add(comboAFNaAFD);
         JButton convertirAFNaAFD = new JButton("Convertir a AFD");
         panelNuevo.add(convertirAFNaAFD);
 
-    convertirAFNaAFD.addActionListener(new ActionListener() {
-        @Override
+        convertirAFNaAFD.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 try {
                     Integer id = (Integer) comboAFNaAFD.getSelectedItem();
                     AFN afn = AFNS.get(id);
                     if (afn == null) {
                         JOptionPane.showMessageDialog(null, "El AFN no fue encontrado");
-                        return;
+                            return;
+                    }
+
+                    AFD afd = afn.ConvertirAFNaAFD();
+                    JOptionPane.showMessageDialog(null, "Se convirtió el AFN a AFD");
+
+                    Tabla(afd);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "Error al convertir: " + ex.getMessage());
                 }
+            }
+        });
+    }
 
-                AFD afd = afn.ConvertirAFNaAFD();
-                JOptionPane.showMessageDialog(null, "Se convirtió el AFN a AFD");
-
-                Tabla(afd);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "Error al convertir: " + ex.getMessage());
+    private void Tabla(AFD afd) {
+        //arreglo para la creación de la tabla ascii
+        String[] columnas = new String[258];
+        columnas[0] = "Estado";
+        columnas[257] = "Token";
+        for (int i = 1; i < 257; i++) {
+            columnas[i] = Character.toString((char) (i - 1));
+        }
+        //ordena los estados del AFD, o sea, para que sea, S0,S1,S2...etc
+        List<Estado> listaOrdenada = new ArrayList<>(afd.estados);
+        listaOrdenada.sort(Comparator.comparingInt(Estado::getIdEstado));
+        Map<Estado, String> nombreEstados = new HashMap<>();
+        for (int i = 0; i < listaOrdenada.size(); i++) {
+            nombreEstados.put(listaOrdenada.get(i), "S" + i);
+        }
+        //crea la tabla
+        Object[][] data = new Object[listaOrdenada.size()][258];
+        for (int row = 0; row < listaOrdenada.size(); row++) {
+            Estado estado = listaOrdenada.get(row);
+            data[row][0] = nombreEstados.get(estado);
+            for (int i = 1; i < 257; i++) {
+                char c = (char) (i - 1);
+                Estado destino = obtenerEstadoPorCaracter(estado, c);
+                data[row][i] = (destino != null) ? nombreEstados.get(destino) : "-1";
+            }
+            // se asigna token de aceptación
+            if (afd.EstadoAceptacion(estado)) {
+                data[row][257] = estado.getToken1();
+            } else {
+                data[row][257] = "-1";
             }
         }
-    });
-}
-
-            private void Tabla(AFD afd) {
-                //arreglo para la creación de la tabla ascii
-                String[] columnas = new String[258];
-                columnas[0] = "Estado";
-                columnas[257] = "Token";
-                    for (int i = 1; i < 257; i++) {
-                        columnas[i] = Character.toString((char) (i - 1));
-    }
-                    //ordena los estados del AFD, o sea, para que sea, S0,S1,S2...etc 
-                 List<Estado> listaOrdenada = new ArrayList<>(afd.estados);
-                listaOrdenada.sort(Comparator.comparingInt(Estado::getIdEstado));
-                 Map<Estado, String> nombreEstados = new HashMap<>();
-                    for (int i = 0; i < listaOrdenada.size(); i++) {
-                        nombreEstados.put(listaOrdenada.get(i), "S" + i);
-}
-                    //crea la tabla 
-                Object[][] data = new Object[listaOrdenada.size()][258];
-                    for (int row = 0; row < listaOrdenada.size(); row++) {
-                         Estado estado = listaOrdenada.get(row);
-                         data[row][0] = nombreEstados.get(estado);
-                    for (int i = 1; i < 257; i++) {
-                    char c = (char) (i - 1);
-                        Estado destino = obtenerEstadoPorCaracter(estado, c);
-                        data[row][i] = (destino != null) ? nombreEstados.get(destino) : "-1";
-        }
-        // se asigna token de aceptación 
-        if (afd.EstadoAceptacion(estado)) {
-            data[row][257] = estado.getToken1();
-        } else {
-            data[row][257] = "-1";
-        }
-    }
 
         //diseño de la tabla
         JTable tablaASCII = new JTable(data, columnas);
@@ -368,16 +367,16 @@ public class Parte1 extends JFrame {
         frameTabla.setSize(1400, 600);
         frameTabla.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frameTabla.setVisible(true);
-}
-
-        private Estado obtenerEstadoPorCaracter(Estado estado, char c) {
-            for (Transicion transicion : estado.getTrans1()) {
-                 if (transicion.getEdoTrans(c) != null) {
-            return transicion.getEdoTrans(c);
-        }
     }
-    return null;
-}
+
+    private Estado obtenerEstadoPorCaracter(Estado estado, char c) {
+        for (Transicion transicion : estado.getTrans1()) {
+            if (transicion.getEdoTrans(c) != null) {
+                return transicion.getEdoTrans(c);
+            }
+        }
+        return null;
+    }
 
     private void panelUnionEspecialAFN() {
         // Limpiar el panel y configurar layout
@@ -498,6 +497,7 @@ public class Parte1 extends JFrame {
                     AFNS.put(idMinimo, afnBase);
 
 
+
                     // Actualizar la tabla principal después de la operación
                     tableModel.setRowCount(0);
                     for (Integer id : AFNS.keySet()) {
@@ -515,6 +515,8 @@ public class Parte1 extends JFrame {
             }
         });
     }
+
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Parte1());
     }
