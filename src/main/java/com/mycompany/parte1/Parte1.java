@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Comparator;
 import java.util.Map;
@@ -362,12 +364,68 @@ public class Parte1 extends JFrame {
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
+        //Boton para guardar el afn, y mandamos a llamar nuestra clase guardarTabla
+        JButton btnGuardar = new JButton("Guardar AFN");
+        btnGuardar.addActionListener(e -> guardarTabla(data, columnas));
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(btnGuardar, BorderLayout.SOUTH);
+
         JFrame frameTabla = new JFrame("Tokens");
-        frameTabla.add(scrollPane);
+        frameTabla.add(panel);
         frameTabla.setSize(1400, 600);
         frameTabla.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frameTabla.setVisible(true);
     }
+
+    private void guardarTabla(Object[][] data, String[] columnas) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Guardar tabla como .txt");
+        int userSelection = fileChooser.showSaveDialog(null);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File archivo = fileChooser.getSelectedFile();
+            if (!archivo.getName().endsWith(".txt")) {
+                archivo = new File(archivo.getAbsolutePath() + ".txt");
+            }
+
+            try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+                    new FileOutputStream(archivo), StandardCharsets.UTF_8))) {
+
+                // Escribir encabezados
+                writer.print(columnas[0]); // "Estado"
+
+                // Para los caracteres ASCII, usar representación legible
+                for (int i = 1; i < 257; i++) {
+                    char c = (char) (i - 1);
+                    String repr;
+                    if (c < 32 || c > 126) { // Si es un carácter de control o no imprimible
+                        repr = String.format("<%d>", (int)c); // Representación numérica
+                    } else {
+                        repr = Character.toString(c); // Carácter normal
+                    }
+                    writer.print("\t" + repr);
+                }
+                writer.print("\t" + columnas[257]); // "Token"
+                writer.println();
+
+                // Escribir contenido de la tabla
+                for (Object[] row : data) {
+                    writer.print(row[0]); // Estado
+                    for (int i = 1; i < row.length; i++) {
+                        writer.print("\t" + row[i]);
+                    }
+                    writer.println();
+                }
+
+                JOptionPane.showMessageDialog(null, "Tabla guardada exitosamente en: " + archivo.getAbsolutePath());
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(null, "Error al guardar el archivo: " + ex.getMessage());
+            }
+        }
+    }
+
 
     private Estado obtenerEstadoPorCaracter(Estado estado, char c) {
         for (Transicion transicion : estado.getTrans1()) {
