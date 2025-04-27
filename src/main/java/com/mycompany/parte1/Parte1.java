@@ -824,12 +824,16 @@ public class Parte1 extends JFrame {
 
                                 // Verificar si el estado es de aceptación
                                 if (siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
-                                    int tokenEnEstado = afd.TablaAFD[siguienteEstado][256];
+                                    int tokenEnEstado = -1;
+                                    if (siguienteEstado >= 0 && siguienteEstado < afd.estados.size()) {
+                                        tokenEnEstado = afd.obtenerEstadoPorId(siguienteEstado).getToken1();
+                                    }
                                     if (tokenEnEstado != -1) {
                                         tokenReconocido = true;
                                         ultimoTokenReconocido = tokenEnEstado;
                                         longitudUltimoToken = longitudActual;
                                     }
+
                                 }
                             }
 
@@ -851,9 +855,10 @@ public class Parte1 extends JFrame {
 
                                 int siguienteEstado = afd.TablaAFD[estadoActual][ascii];
                                 int tokenEnEstado = -1;
-                                if (siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
-                                    tokenEnEstado = afd.TablaAFD[siguienteEstado][256];
+                                if (siguienteEstado >= 0 && siguienteEstado < afd.estados.size()) {
+                                    tokenEnEstado = afd.obtenerEstadoPorId(siguienteEstado).getToken1();
                                 }
+
 
                                 resultado.append(posicionGlobal + i).append("\t")
                                         .append("'").append(c).append("'").append("\t")
@@ -867,118 +872,21 @@ public class Parte1 extends JFrame {
                             // Avanzar la posición global
                             posicionGlobal += mejorLongitudToken;
                         } else {
-                            // No se reconoció ningún token, reportar error y avanzar un carácter
-                            char c = cadena.charAt(posicionGlobal);
-                            resultado.append(posicionGlobal).append("\t")
-                                    .append("'").append(c).append("'").append("\t")
-                                    .append("S0").append("\t")
-                                    .append("ERROR").append("\t")
-                                    .append("-").append("\n");
-                            resultado.append("** Error en la posición ").append(posicionGlobal)
-                                    .append(": No hay transición definida para '").append(c).append("' **\n");
-
-                            posicionGlobal++;
-                        }
-                    }
-
-                    resultado.append("\n");
-
-                    // Sección de tokens reconocidos (usando el analizador original para comparación)
-                    resultado.append("Tokens reconocidos (método original):\n");
-                    resultado.append("---------------------------\n");
-                    resultado.append("Token\tLexema\n");
-
-                    // Reiniciar el analizador para el análisis completo
-                    analizador = new AnalizadorLex(cadena, afdFilePath);
-
-                    int token;
-                    while ((token = analizador.yylex()) != SimbolosEspeciales.FIN) {
-                        if (token == SimbolosEspeciales.ERROR) {
-                            resultado.append("ERROR\t\"").append(analizador.Lexema).append("\"\n");
-                        } else {
-                            resultado.append(token).append("\t\"").append(analizador.Lexema).append("\"\n");
-                        }
-                    }
-
-                    // Tokens reconocidos con el nuevo enfoque de subcadenas
-                    resultado.append("\nTokens reconocidos (método de subcadenas):\n");
-                    resultado.append("---------------------------\n");
-                    resultado.append("Token\tLexema\n");
-
-                    // Reiniciar para el análisis con el nuevo método
-                    posicionGlobal = 0;
-
-                    while (posicionGlobal < cadena.length()) {
-                        // Código similar al anterior pero solo para mostrar los tokens
-                        // Similar al análisis detallado, pero sin mostrar cada paso
-
-                        int mejorEstadoInicial = -1;
-                        int mejorLongitudToken = 0;
-                        int mejorToken = -1;
-
-                        for (Estado estado : afd.estados) {
-                            int estadoId = estado.getIdEstado();
-                            int estadoActual = estadoId;
-                            int longitudActual = 0;
-                            boolean tokenReconocido = false;
-                            int ultimoTokenReconocido = -1;
-                            int longitudUltimoToken = 0;
-
-                            for (int i = 0; i < cadena.length() - posicionGlobal; i++) {
-                                char c = cadena.charAt(posicionGlobal + i);
-                                int ascii = (int) c;
-
-                                int siguienteEstado = -1;
-                                if (ascii >= 0 && ascii < 256 && estadoActual >= 0 && estadoActual < afd.TablaAFD.length) {
-                                    siguienteEstado = afd.TablaAFD[estadoActual][ascii];
-                                }
-
-                                if (siguienteEstado == -1) {
-                                    break;
-                                }
-
-                                estadoActual = siguienteEstado;
-                                longitudActual = i + 1;
-
-                                if (siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
-                                    int tokenEnEstado = afd.TablaAFD[siguienteEstado][256];
-                                    if (tokenEnEstado != -1) {
-                                        tokenReconocido = true;
-                                        ultimoTokenReconocido = tokenEnEstado;
-                                        longitudUltimoToken = longitudActual;
-                                    }
-                                }
-                            }
-
-                            if (tokenReconocido && longitudUltimoToken > mejorLongitudToken) {
-                                mejorEstadoInicial = estadoId;
-                                mejorLongitudToken = longitudUltimoToken;
-                                mejorToken = ultimoTokenReconocido;
-                            }
-                        }
-
-                        if (mejorLongitudToken > 0) {
-                            String lexema = cadena.substring(posicionGlobal, posicionGlobal + mejorLongitudToken);
-                            resultado.append(mejorToken).append("\t\"").append(lexema).append("\"\n");
-                            posicionGlobal += mejorLongitudToken;
-                        } else {
                             // No se reconoció ningún token, marcar como error y avanzar
                             resultado.append("ERROR\t\"").append(cadena.charAt(posicionGlobal)).append("\"\n");
                             posicionGlobal++;
                         }
                     }
 
-                    resultado.append("\nAnálisis completado.");
+                    // Mostrar los resultados
                     resultadoArea.setText(resultado.toString());
 
                 } catch (Exception ex) {
-                    resultadoArea.setText("Error al analizar: " + ex.getMessage() + "\n\n" +
-                            Arrays.toString(ex.getStackTrace()));
-                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(null, "Error al analizar la cadena: " + ex.getMessage());
                 }
             }
-        });        // Actualizar el panel
-        panelNuevo.revalidate();
+        });
+      panelNuevo.revalidate();
         panelNuevo.repaint();
     }
     public static void main(String[] args) {

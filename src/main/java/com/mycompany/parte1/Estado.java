@@ -34,6 +34,7 @@ public class Estado {
         this.edoAcept1 = false;
     }
 
+
     public int getToken1() {return Token1;}
     public void setToken1(int token1) {Token1 = token1;}
     public Set<Transicion> getTrans1() {
