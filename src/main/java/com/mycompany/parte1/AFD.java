@@ -1,8 +1,11 @@
 package com.mycompany.parte1;
 
+import java.io.*;
 import java.util.*;
+import javax.swing.JOptionPane;
 
 public class AFD {
+    public int[][] TablaAFD;
     Set<Estado> estados;
     Estado estadoInicial;
     Set<Estado> estadosAceptacion;
@@ -14,55 +17,80 @@ public class AFD {
         alfabeto = new HashSet<>();
     }
 
-    // Método para verificar si una cadena es aceptada por este AFD
-    public boolean analizarCadena(String cadena) {
-        Estado estadoActual = estadoInicial;
+    public static AFD cargarAFDDesdeArchivo(File archivo) {
+        AFD afd = new AFD();
 
-        for (int i = 0; i < cadena.length(); i++) {
-            char c = cadena.charAt(i);
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            List<String[]> filas = new ArrayList<>();
 
-            // Verificar si el carácter está en el alfabeto
-            if (!alfabeto.contains(c)) {
-                return false;
+            // Leer la primera línea (encabezados)
+            String lineaEncabezados = br.readLine();
+
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                // Dividir por tabulaciones
+                String[] partes = linea.split("\t");
+                filas.add(partes);
             }
 
-            // Buscar la transición para este carácter
-            Estado siguiente = null;
-            for (Transicion t : estadoActual.getTrans1()) {
-                Estado destino = t.getEdoTrans(c);
-                if (destino != null) {
-                    siguiente = destino;
-                    break;
+            // Crear la tabla con el tamaño adecuado
+            afd.TablaAFD = new int[filas.size()][258];
+
+            // Rellenar la tabla
+            for (int i = 0; i < filas.size(); i++) {
+                String[] fila = filas.get(i);
+
+                // Rellenar cada columna (caracteres ASCII + token)
+                for (int j = 1; j < fila.length; j++) {
+                    // La columna 0 es el nombre del estado (S0, S1, etc.)
+                    // Las columnas 1-256 son las transiciones para cada caracter
+                    // La columna 257 es el token
+
+                    int valor;
+                    if (fila[j].equals("-1")) {
+                        valor = -1;
+                    } else if (j < fila.length - 1) { // Si no es la última columna (token)
+                        // Las transiciones pueden ser como "S0", "S1", etc.
+                        if (fila[j].startsWith("S")) {
+                            try {
+                                valor = Integer.parseInt(fila[j].substring(1));
+                            } catch (NumberFormatException e) {
+                                valor = -1;
+                            }
+                        } else {
+                            valor = Integer.parseInt(fila[j]);
+                        }
+                    } else { // Es la columna del token
+                        valor = Integer.parseInt(fila[j]);
+                    }
+
+                    // Ajustar j para que corresponda al índice correcto en TablaAFD
+                    // j-1 porque el primer elemento de fila es el nombre del estado
+                    afd.TablaAFD[i][j-1] = valor;
                 }
             }
 
-            // Si no se encuentra una transición, rechazar la cadena
-            if (siguiente == null) {
-                return false;
-            }
+            System.out.println("AFD cargado exitosamente con " + filas.size() + " estados.");
 
-            estadoActual = siguiente;
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error al cargar el archivo AFD: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Error inesperado: " + e.getMessage());
         }
 
-        // Aceptar si terminamos en un estado de aceptación
-        return estadosAceptacion.contains(estadoActual);
+        return afd;
     }
 
-    // Métodos para obtener el número de estados.
-    public int obtenerNumeroDeEstados() {
-        return estados.size();
+    public Estado getEstadoInicial() {
+        return estadoInicial;
     }
 
-    public int obtenerNumeroDeEstadosDeAceptacion() {
-        return estadosAceptacion.size();
-    }
-
-    // Método para obtener los estado de aceptación
     public boolean EstadoAceptacion(Estado estado) {
         return estadosAceptacion.contains(estado);
     }
 
-    // Método para obtener el token del estado de aceptación
     public String ObtenerToken(Estado estado) {
         return EstadoAceptacion(estado) ? String.valueOf(estado.getToken1()) : "-1";
     }

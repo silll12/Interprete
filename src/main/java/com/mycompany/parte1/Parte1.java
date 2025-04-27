@@ -16,6 +16,8 @@ import javax.swing.table.DefaultTableModel;
 public class Parte1 extends JFrame {
     private JPanel panelNuevo;
     private HashMap<Integer, AFN> AFNS = new HashMap<>();
+    private String archivoSeleccionadoRuta = null;
+
 
     public Parte1() {
         setTitle("Interprete");
@@ -33,7 +35,6 @@ public class Parte1 extends JFrame {
                 "Unión Especial",//Union para anlizador Lexico
                 "Convertir AFN a AFD",
                 "Analizar una cadena",
-                "Probar analizador léxico",
                 "Crear AFN desde una expresión regular"
         };
         JComboBox<String> comboBox = new JComboBox<>(opciones);
@@ -85,7 +86,12 @@ public class Parte1 extends JFrame {
                 break;
             case "Unión Especial":
                 panelUnionEspecialAFN();
-
+                break;
+            case "Analizar una cadena":
+                panelAnalizarCadena();
+                break;
+            case "Crear AFN desde una expresión regular" :
+                panelERaAFN();
                 break;
         }
 
@@ -574,7 +580,232 @@ public class Parte1 extends JFrame {
         });
     }
 
+    private void panelERaAFN() {
 
+
+        panelNuevo.removeAll();
+
+
+        panelNuevo.add(new JLabel("Crear AFN desde una expresión regular"));
+
+
+        panelNuevo.add(new JLabel("Expresión Regular:"));
+        JTextField expresionRegularTextField = new JTextField(20);
+        panelNuevo.add(expresionRegularTextField);
+
+
+        panelNuevo.add(new JLabel("ID para el AFN:"));
+        JTextField idAFNTextField = new JTextField(20);
+        panelNuevo.add(idAFNTextField);
+
+        // Botón "Seleccionar archivo"
+        JButton seleccionarArchivoButton = new JButton("Seleccionar archivo");
+        seleccionarArchivoButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Seleccionar archivo");
+                int seleccion = fileChooser.showOpenDialog(null);
+                if (seleccion == JFileChooser.APPROVE_OPTION) {
+                    File archivoSeleccionado = fileChooser.getSelectedFile();
+                    archivoSeleccionadoRuta = archivoSeleccionado.getAbsolutePath();
+                    System.out.println("Archivo seleccionado: " + archivoSeleccionadoRuta);
+                }
+            }
+        });
+        panelNuevo.add(seleccionarArchivoButton);
+
+        // Botón "Crear AFN"
+        JButton crearAFNButton = new JButton("Crear AFN");
+        crearAFNButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    String expresionRegular = expresionRegularTextField.getText();
+                    int idAFN = Integer.parseInt(idAFNTextField.getText());
+
+                    if (expresionRegular.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Por favor ingresa una expresión regular.");
+                        return;
+                    }
+
+                    if (AFNS.containsKey(idAFN)) {
+                        JOptionPane.showMessageDialog(null, "Ya existe un AFN con este ID.");
+                        return;
+                    }
+
+                    if (archivoSeleccionadoRuta == null) {
+                        JOptionPane.showMessageDialog(null, "No se ha seleccionado un archivo.");
+                        return;
+                    }
+
+                    ER_AFN erAFN = new ER_AFN(expresionRegular, archivoSeleccionadoRuta);
+                    if (erAFN.iniConversion()) {
+                        AFN afnResult = erAFN.result;
+                        AFNS.put(idAFN, afnResult);
+                        JOptionPane.showMessageDialog(null, "AFN creado exitosamente.");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Error al crear el AFN.");
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "No se pudo crear el AFN. Asegúrate de ingresar valores válidos.");
+                }
+            }
+        });
+        panelNuevo.add(crearAFNButton);
+
+
+    }
+
+    private void panelAnalizarCadena() {
+        // Limpiamos el panel y configuramos un layout más apropiado para este caso
+        panelNuevo.removeAll();
+        panelNuevo.setLayout(new BorderLayout());
+
+        // Panel principal con GridBagLayout para organizar mejor los componentes
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        // Título
+        JLabel titleLabel = new JLabel("Analizar Cadena con AFD");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        mainPanel.add(titleLabel, gbc);
+
+        // Sección para cargar el archivo AFD
+        JLabel afdFileLabel = new JLabel("Archivo AFD:");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        mainPanel.add(afdFileLabel, gbc);
+
+        JTextField afdFilePathField = new JTextField(20);
+        afdFilePathField.setEditable(false);
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        mainPanel.add(afdFilePathField, gbc);
+
+        JButton selectFileButton = new JButton("Seleccionar Archivo AFD");
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        mainPanel.add(selectFileButton, gbc);
+
+        // Sección para ingresar la cadena a analizar
+        JLabel cadenaLabel = new JLabel("Cadena a analizar:");
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        mainPanel.add(cadenaLabel, gbc);
+
+        JTextField cadenaField = new JTextField(20);
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.gridwidth = 2;
+        mainPanel.add(cadenaField, gbc);
+
+        // Botón para analizar
+        JButton analizarButton = new JButton("Analizar Cadena");
+        analizarButton.setEnabled(false); // Deshabilitado hasta que se cargue un archivo
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        mainPanel.add(analizarButton, gbc);
+
+        // Área para mostrar los resultados
+        JLabel resultadoLabel = new JLabel("Resultado del análisis:");
+        gbc.gridx = 0;
+        gbc.gridy = 6;
+        mainPanel.add(resultadoLabel, gbc);
+
+        JTextArea resultadoArea = new JTextArea(10, 30);
+        resultadoArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(resultadoArea);
+        gbc.gridx = 0;
+        gbc.gridy = 7;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        mainPanel.add(scrollPane, gbc);
+
+        // Agregar panel principal al panelNuevo
+        panelNuevo.add(mainPanel, BorderLayout.CENTER);
+
+        // Acción del botón para seleccionar archivo
+        selectFileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Seleccionar archivo AFD (.txt)");
+                fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
+                    public boolean accept(File f) {
+                        return f.isDirectory() || f.getName().toLowerCase().endsWith(".txt");
+                    }
+                    public String getDescription() {
+                        return "Archivos de texto (*.txt)";
+                    }
+                });
+
+                int result = fileChooser.showOpenDialog(null);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = fileChooser.getSelectedFile();
+                    afdFilePathField.setText(selectedFile.getAbsolutePath());
+                    analizarButton.setEnabled(true); // Habilitar el botón de analizar
+                }
+            }
+        });
+
+        // Acción del botón para analizar la cadena
+        analizarButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String afdFilePath = afdFilePathField.getText();
+                String cadena = cadenaField.getText();
+
+                if (afdFilePath.isEmpty() || cadena.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Debe seleccionar un archivo AFD y proporcionar una cadena para analizar.");
+                    return;
+                }
+
+                try {
+                    // Crear un nuevo analizador léxico con la cadena y el archivo AFD
+                    AnalizadorLex analizador = new AnalizadorLex(cadena, afdFilePath);
+
+                    // Limpiar el área de resultados
+                    resultadoArea.setText("");
+
+                    // Analizar la cadena y mostrar los tokens encontrados
+                    StringBuilder resultado = new StringBuilder();
+                    resultado.append("Análisis de la cadena: \"").append(cadena).append("\"\n\n");
+                    resultado.append("Token\tLexema\n");
+                    resultado.append("---------------------------\n");
+
+                    int token;
+                    while ((token = analizador.yylex()) != SimbolosEspeciales.FIN) {
+                        if (token == SimbolosEspeciales.ERROR) {
+                            resultado.append("ERROR\t\"").append(analizador.Lexema).append("\"\n");
+                        } else {
+                            resultado.append(token).append("\t\"").append(analizador.Lexema).append("\"\n");
+                        }
+                    }
+
+                    resultado.append("\nAnálisis completado.");
+                    resultadoArea.setText(resultado.toString());
+
+                } catch (Exception ex) {
+                    resultadoArea.setText("Error al analizar: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        // Actualizar el panel
+        panelNuevo.revalidate();
+        panelNuevo.repaint();
+    }
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Parte1());
     }
