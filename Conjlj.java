@@ -3,12 +3,12 @@ package com.mycompany.parte1;
 import java.util.Arrays;
 import java.util.HashSet;
 
-public class ConjIj {
+public class Conjlj {
     public HashSet<Estado> ConjI;
     public int j;
     public int[] TransicionesAFD;
 
-    public ConjIj(int cardAlfabeto) {
+    public Conjlj(int cardAlfabeto) {
         ConjI = new HashSet<>();
         TransicionesAFD = new int[cardAlfabeto];
         // Inicializa todas las transiciones con -1 (indicando que no hay transición)
@@ -31,7 +31,7 @@ public class ConjIj {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        ConjIj other = (ConjIj) obj;
+        Conjlj other = (Conjlj) obj;
         return this.ConjI.equals(other.ConjI);
     }
 

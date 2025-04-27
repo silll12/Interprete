@@ -8,7 +8,6 @@ package com.mycompany.parte1;
  *
  * @author silvi
  */
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,13 +20,20 @@ public class Estado {
 
     private int idEstado1;
     private boolean edoAcept1;
-    private int Token1 = -1; 
+    private int Token1 = -1;
     private Set<Transicion> trans1 = new HashSet<>();
 
     public Estado() {
         this.idEstado1 = ContadorIdEstado++;
         this.edoAcept1 = false;
     }
+
+    // Add this constructor to support cargarAFDDesdeArchivo method
+    public Estado(int id) {
+        this.idEstado1 = id;
+        this.edoAcept1 = false;
+    }
+
 
     public int getToken1() {return Token1;}
     public void setToken1(int token1) {Token1 = token1;}
@@ -42,5 +48,4 @@ public class Estado {
     public int getIdEstado() {return idEstado1;}
     public void setIdEstado(int idEstado1) {this.idEstado1 = idEstado1;}
     public void agregarTransicion(Transicion t) {this.trans1.add(t);}
-
 }
