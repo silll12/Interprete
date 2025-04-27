@@ -1,6 +1,7 @@
 package com.mycompany.parte1;
 
 import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -655,17 +656,22 @@ public class Parte1 extends JFrame {
     }
 
     private void panelAnalizarCadena() {
-        // Limpiamos el panel y configuramos un layout más apropiado para este caso
+        // Configuración inicial del panel
         panelNuevo.removeAll();
         panelNuevo.setLayout(new BorderLayout());
 
-        // Panel principal con GridBagLayout para organizar mejor los componentes
+        // Lista para almacenar los pasos del análisis
+        List<PasoAnalisis> pasos = new ArrayList<>();
+        int[] pasoActual = {0};
+        Map<Integer, Color> tokenColorMap = new HashMap<>();
+
+        // Panel principal con GridBagLayout
         JPanel mainPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        // Título
+        // Componentes de la interfaz
         JLabel titleLabel = new JLabel("Analizar Cadena con AFD");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
         gbc.gridx = 0;
@@ -673,7 +679,6 @@ public class Parte1 extends JFrame {
         gbc.gridwidth = 2;
         mainPanel.add(titleLabel, gbc);
 
-        // Sección para cargar el archivo AFD
         JLabel afdFileLabel = new JLabel("Archivo AFD:");
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -692,7 +697,6 @@ public class Parte1 extends JFrame {
         gbc.gridwidth = 2;
         mainPanel.add(selectFileButton, gbc);
 
-        // Sección para ingresar la cadena a analizar
         JLabel cadenaLabel = new JLabel("Cadena a analizar:");
         gbc.gridx = 0;
         gbc.gridy = 3;
@@ -704,22 +708,27 @@ public class Parte1 extends JFrame {
         gbc.gridwidth = 2;
         mainPanel.add(cadenaField, gbc);
 
-        // Botón para analizar
         JButton analizarButton = new JButton("Analizar Cadena");
-        analizarButton.setEnabled(false); // Deshabilitado hasta que se cargue un archivo
+        analizarButton.setEnabled(false);
         gbc.gridx = 0;
         gbc.gridy = 5;
         mainPanel.add(analizarButton, gbc);
 
-        // Área para mostrar los resultados
         JLabel resultadoLabel = new JLabel("Resultado del análisis:");
         gbc.gridx = 0;
         gbc.gridy = 6;
+        gbc.gridwidth = 1;
         mainPanel.add(resultadoLabel, gbc);
 
-        JTextArea resultadoArea = new JTextArea(10, 30);
-        resultadoArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(resultadoArea);
+        JButton botonSiguiente = new JButton("Siguiente");
+        botonSiguiente.setEnabled(false);
+        gbc.gridx = 1;
+        gbc.gridy = 6;
+        mainPanel.add(botonSiguiente, gbc);
+
+        JTextPane resultadoPane = new JTextPane();
+        resultadoPane.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(resultadoPane);
         gbc.gridx = 0;
         gbc.gridy = 7;
         gbc.gridwidth = 2;
@@ -728,81 +737,237 @@ public class Parte1 extends JFrame {
         gbc.weighty = 1.0;
         mainPanel.add(scrollPane, gbc);
 
-        // Agregar panel principal al panelNuevo
+        JLabel detalleLabel = new JLabel("Análisis detallado:");
+        gbc.gridx = 0;
+        gbc.gridy = 8;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.0;
+        mainPanel.add(detalleLabel, gbc);
+
+        JTextPane detallePane = new JTextPane();
+        detallePane.setEditable(false);
+        JScrollPane detalleScrollPane = new JScrollPane(detallePane);
+        gbc.gridx = 0;
+        gbc.gridy = 9;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        mainPanel.add(detalleScrollPane, gbc);
+
         panelNuevo.add(mainPanel, BorderLayout.CENTER);
 
-        // Acción del botón para seleccionar archivo
-        selectFileButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setDialogTitle("Seleccionar archivo AFD (.txt)");
-                fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
-                    public boolean accept(File f) {
-                        return f.isDirectory() || f.getName().toLowerCase().endsWith(".txt");
-                    }
-                    public String getDescription() {
-                        return "Archivos de texto (*.txt)";
-                    }
-                });
-
-                int result = fileChooser.showOpenDialog(null);
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = fileChooser.getSelectedFile();
-                    afdFilePathField.setText(selectedFile.getAbsolutePath());
-                    analizarButton.setEnabled(true); // Habilitar el botón de analizar
+        // Acción para seleccionar archivo
+        selectFileButton.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Seleccionar archivo AFD (.txt)");
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
+                @Override
+                public boolean accept(File f) {
+                    return f.isDirectory() || f.getName().toLowerCase().endsWith(".txt");
                 }
+
+                @Override
+                public String getDescription() {
+                    return "Archivos de texto (*.txt)";
+                }
+            });
+
+            if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                afdFilePathField.setText(selectedFile.getAbsolutePath());
+                analizarButton.setEnabled(true);
             }
         });
 
-        // Acción del botón para analizar la cadena
-// Acción del botón para analizar la cadena
-        analizarButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String afdFilePath = afdFilePathField.getText();
-                String cadena = cadenaField.getText();
+        // Acción para analizar la cadena (VERSIÓN CORREGIDA)
+        analizarButton.addActionListener(e -> {
+            String afdFilePath = afdFilePathField.getText();
+            String cadena = cadenaField.getText();
 
-                if (afdFilePath.isEmpty() || cadena.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Debe seleccionar un archivo AFD y proporcionar una cadena para analizar.");
-                    return;
-                }
+            if (afdFilePath.isEmpty() || cadena.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Debe seleccionar un archivo AFD y proporcionar una cadena.");
+                return;
+            }
 
-                try {
-                    AnalizadorLex analizador = new AnalizadorLex(cadena, afdFilePath);
+            try {
+                // Limpiar resultados anteriores
+                pasos.clear();
+                pasoActual[0] = 0;
+                resultadoPane.setText("");
+                detallePane.setText("");
+                tokenColorMap.clear();
 
-                    StringBuilder resultado = new StringBuilder();
-                    int token;
+                // Cargar AFD
+                AnalizadorLex analizador = new AnalizadorLex(cadena, afdFilePath);
+                AFD afd = analizador.getAFD();
 
-                    do {
-                        token = analizador.yylex();
-                        String lexema = analizador.Lexema;
+                // Configurar colores
+                Color[] colores = {
+                        new Color(41, 128, 185), new Color(155, 89, 182),
+                        new Color(231, 76, 60), new Color(39, 174, 96),
+                        new Color(243, 156, 18), new Color(26, 188, 156)
+                };
 
-                        if (token != SimbolosEspeciales.OMITIR) {
-                            switch (token) {
-                                case 20000:
-                                    resultado.append("Error en el lexema: ").append(lexema).append("\n");
-                                    break;
-                                case 0:
-                                    resultado.append("Fin de cadena.\n");
-                                    break;
-                                default:
-                                    resultado.append("Token: ").append(token).append(", Lexema: '").append(lexema).append("'\n");
-                                    break;
-                            }
+                StyledDocument docDetalle = detallePane.getStyledDocument();
+                SimpleAttributeSet headerAttrs = new SimpleAttributeSet();
+                StyleConstants.setBold(headerAttrs, true);
+                docDetalle.insertString(docDetalle.getLength(), "Análisis de: \"" + cadena + "\"\n\n", headerAttrs);
+                docDetalle.insertString(docDetalle.getLength(), "Posición\tCarácter\tEstado\tToken\n", headerAttrs);
+
+                // Análisis léxico mejorado
+                int pos = 0;
+                while (pos < cadena.length()) {
+                    int estadoActual = 0;
+                    int inicioToken = pos;
+                    int tokenId = -1;
+                    int ultimaAceptacionPos = pos - 1; // Inicializar a posición inválida
+                    int ultimoEstadoAceptacion = -1;
+
+                    // Buscar el token más largo posible
+                    for (int i = pos; i < cadena.length(); i++) {
+                        char c = cadena.charAt(i);
+                        int ascii = (int) c;
+
+                        // Validar rango ASCII
+                        if (ascii < 0 || ascii >= 256 || estadoActual >= afd.TablaAFD.length) {
+                            break;
                         }
-                    } while (token != SimbolosEspeciales.FIN);
 
-                    resultadoArea.setText(resultado.toString());
+                        int siguienteEstado = afd.TablaAFD[estadoActual][ascii];
 
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, "Error al analizar la cadena: " + ex.getMessage());
+                        // Si no hay transición, terminar
+                        if (siguienteEstado == -1) {
+                            break;
+                        }
+
+                        estadoActual = siguienteEstado;
+
+                        // Verificar si es estado de aceptación
+                        Estado estadoObj = afd.obtenerEstadoPorId(estadoActual);
+                        if (estadoObj != null && estadoObj.getToken1() != -1) {
+                            ultimoEstadoAceptacion = estadoActual;
+                            tokenId = estadoObj.getToken1();
+                            ultimaAceptacionPos = i; // Actualizar última posición de aceptación
+                        }
+                    }
+
+                    if (ultimoEstadoAceptacion != -1) {
+                        // Token reconocido - extraer lexema
+                        String lexema = cadena.substring(pos, ultimaAceptacionPos + 1);
+
+                        // Asignar color si es nuevo token
+                        if (!tokenColorMap.containsKey(tokenId)) {
+                            tokenColorMap.put(tokenId, colores[tokenColorMap.size() % colores.length]);
+                        }
+
+                        // Mostrar detalle del token reconocido
+                        estadoActual = 0;
+                        for (int i = pos; i <= ultimaAceptacionPos; i++) {
+                            char c = cadena.charAt(i);
+                            int ascii = (int) c;
+                            int siguienteEstado = afd.TablaAFD[estadoActual][ascii];
+
+                            SimpleAttributeSet attrs = new SimpleAttributeSet();
+                            StyleConstants.setForeground(attrs, tokenColorMap.get(tokenId));
+                            if (i == ultimaAceptacionPos) {
+                                StyleConstants.setBold(attrs, true);
+                            }
+
+                            try {
+                                docDetalle.insertString(docDetalle.getLength(),
+                                        i + "\t'" + c + "'\tS" + estadoActual + "\t" +
+                                                (i == ultimaAceptacionPos ? tokenId : "-") + "\n", attrs);
+                            } catch (BadLocationException ex) {
+                                ex.printStackTrace();
+                            }
+
+                            estadoActual = siguienteEstado;
+                        }
+
+                        // Registrar paso
+                        pasos.add(new PasoAnalisis(lexema, tokenColorMap.get(tokenId), tokenId));
+                        pos = ultimaAceptacionPos + 1; // Mover posición al siguiente carácter
+                    } else {
+                        // Carácter no reconocido
+                        if (pos < cadena.length()) {
+                            SimpleAttributeSet errorAttrs = new SimpleAttributeSet();
+                            StyleConstants.setForeground(errorAttrs, Color.RED);
+                            StyleConstants.setBold(errorAttrs, true);
+                            try {
+                                docDetalle.insertString(docDetalle.getLength(),
+                                        pos + "\t'" + cadena.charAt(pos) + "'\tERROR\tCarácter no válido\n", errorAttrs);
+                            } catch (BadLocationException ex) {
+                                ex.printStackTrace();
+                            }
+
+                            pasos.add(new PasoAnalisis(String.valueOf(cadena.charAt(pos)), Color.RED, -1));
+                            pos++;
+                        }
+                    }
                 }
+
+                // Mostrar resultados
+                if (!pasos.isEmpty()) {
+                    mostrarPasosHasta(resultadoPane, pasos, pasoActual[0]);
+                    botonSiguiente.setEnabled(true);
+                }
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(null, "Error al analizar: " + ex.getMessage());
+                ex.printStackTrace();
             }
         });
-      panelNuevo.revalidate();
+
+        // Acción del botón siguiente
+        botonSiguiente.addActionListener(e -> {
+            if (pasoActual[0] < pasos.size() - 1) {
+                pasoActual[0]++;
+                mostrarPasosHasta(resultadoPane, pasos, pasoActual[0]);
+            } else {
+                JOptionPane.showMessageDialog(null, "Fin del análisis.");
+            }
+        });
+
+        panelNuevo.revalidate();
         panelNuevo.repaint();
     }
+
+    // Método para mostrar los pasos con formato
+    private void mostrarPasosHasta(JTextPane textPane, List<PasoAnalisis> pasos, int hasta) {
+        StyledDocument doc = textPane.getStyledDocument();
+        textPane.setText("");
+
+        for (int i = 0; i <= hasta; i++) {
+            PasoAnalisis paso = pasos.get(i);
+            SimpleAttributeSet attrs = new SimpleAttributeSet();
+            StyleConstants.setForeground(attrs, paso.getColor());
+
+            if (paso.getToken() != -1) {
+                StyleConstants.setBold(attrs, true);
+                try {
+                    doc.insertString(doc.getLength(), paso.getLexema(), attrs);
+                    // Mostrar token como superíndice
+                    SimpleAttributeSet tokenAttrs = new SimpleAttributeSet();
+                    StyleConstants.setSuperscript(tokenAttrs, true);
+                    StyleConstants.setForeground(tokenAttrs, paso.getColor().darker());
+                    doc.insertString(doc.getLength(), String.valueOf(paso.getToken()), tokenAttrs);
+                    doc.insertString(doc.getLength(), " ", null); // Espacio después
+                } catch (BadLocationException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                try {
+                    doc.insertString(doc.getLength(), paso.getLexema(), attrs);
+                } catch (BadLocationException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Parte1());
     }
