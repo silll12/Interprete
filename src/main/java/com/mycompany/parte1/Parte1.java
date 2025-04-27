@@ -769,116 +769,30 @@ public class Parte1 extends JFrame {
                 }
 
                 try {
-                    // Crear un nuevo analizador léxico con la cadena y el archivo AFD
                     AnalizadorLex analizador = new AnalizadorLex(cadena, afdFilePath);
-                    AFD afd = analizador.getAFD();
 
-                    // Limpiar el área de resultados
-                    resultadoArea.setText("");
-
-                    // Encabezado para el análisis
                     StringBuilder resultado = new StringBuilder();
-                    resultado.append("Análisis de la cadena: \"").append(cadena).append("\"\n\n");
+                    int token;
 
-                    // Sección para análisis paso a paso
-                    resultado.append("Análisis detallado por carácter:\n");
-                    resultado.append("---------------------------\n");
-                    resultado.append("Posición\tCarácter\tEstado\tTransición\tToken\n");
+                    do {
+                        token = analizador.yylex();
+                        String lexema = analizador.Lexema;
 
-                    // Variable para rastrear la posición global en la cadena
-                    int posicionGlobal = 0;
-
-                    // Análisis de la cadena completa como subcadenas
-                    while (posicionGlobal < cadena.length()) {
-                        int mejorEstadoInicial = -1;
-                        int mejorLongitudToken = 0;
-                        int mejorToken = -1;
-
-                        // Intentar reconocer subcadenas desde cada estado posible
-                        for (Estado estado : afd.estados) {
-                            int estadoId = estado.getIdEstado();
-                            int longitudActual = 0;
-                            int estadoActual = estadoId;
-                            boolean tokenReconocido = false;
-                            int ultimoTokenReconocido = -1;
-                            int longitudUltimoToken = 0;
-
-                            // Intentar reconocer desde este estado inicial
-                            for (int i = 0; i < cadena.length() - posicionGlobal; i++) {
-                                char c = cadena.charAt(posicionGlobal + i);
-                                int ascii = (int) c;
-
-                                // Verificar si hay transición válida
-                                int siguienteEstado = -1;
-                                if (ascii >= 0 && ascii < 256 && estadoActual >= 0 && estadoActual < afd.TablaAFD.length) {
-                                    siguienteEstado = afd.TablaAFD[estadoActual][ascii];
-                                }
-
-                                // Si no hay transición, terminamos con este estado inicial
-                                if (siguienteEstado == -1) {
+                        if (token != SimbolosEspeciales.OMITIR) {
+                            switch (token) {
+                                case 20000:
+                                    resultado.append("Error en el lexema: ").append(lexema).append("\n");
                                     break;
-                                }
-
-                                estadoActual = siguienteEstado;
-                                longitudActual = i + 1;
-
-                                // Verificar si el estado es de aceptación
-                                if (siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
-                                    int tokenEnEstado = -1;
-                                    if (siguienteEstado >= 0 && siguienteEstado < afd.estados.size()) {
-                                        tokenEnEstado = afd.obtenerEstadoPorId(siguienteEstado).getToken1();
-                                    }
-                                    if (tokenEnEstado != -1) {
-                                        tokenReconocido = true;
-                                        ultimoTokenReconocido = tokenEnEstado;
-                                        longitudUltimoToken = longitudActual;
-                                    }
-
-                                }
-                            }
-
-                            // Si encontramos un token y es mejor que el anterior, lo guardamos
-                            if (tokenReconocido && longitudUltimoToken > mejorLongitudToken) {
-                                mejorEstadoInicial = estadoId;
-                                mejorLongitudToken = longitudUltimoToken;
-                                mejorToken = ultimoTokenReconocido;
+                                case 0:
+                                    resultado.append("Fin de cadena.\n");
+                                    break;
+                                default:
+                                    resultado.append("Token: ").append(token).append(", Lexema: '").append(lexema).append("'\n");
+                                    break;
                             }
                         }
+                    } while (token != SimbolosEspeciales.FIN);
 
-                        // Si encontramos un token válido
-                        if (mejorLongitudToken > 0) {
-                            // Mostrar el análisis detallado del token reconocido
-                            int estadoActual = mejorEstadoInicial;
-                            for (int i = 0; i < mejorLongitudToken; i++) {
-                                char c = cadena.charAt(posicionGlobal + i);
-                                int ascii = (int) c;
-
-                                int siguienteEstado = afd.TablaAFD[estadoActual][ascii];
-                                int tokenEnEstado = -1;
-                                if (siguienteEstado >= 0 && siguienteEstado < afd.estados.size()) {
-                                    tokenEnEstado = afd.obtenerEstadoPorId(siguienteEstado).getToken1();
-                                }
-
-
-                                resultado.append(posicionGlobal + i).append("\t")
-                                        .append("'").append(c).append("'").append("\t")
-                                        .append("S").append(estadoActual).append("\t")
-                                        .append("→ S").append(siguienteEstado).append("\t")
-                                        .append(tokenEnEstado == -1 ? "-" : tokenEnEstado).append("\n");
-
-                                estadoActual = siguienteEstado;
-                            }
-
-                            // Avanzar la posición global
-                            posicionGlobal += mejorLongitudToken;
-                        } else {
-                            // No se reconoció ningún token, marcar como error y avanzar
-                            resultado.append("ERROR\t\"").append(cadena.charAt(posicionGlobal)).append("\"\n");
-                            posicionGlobal++;
-                        }
-                    }
-
-                    // Mostrar los resultados
                     resultadoArea.setText(resultado.toString());
 
                 } catch (Exception ex) {

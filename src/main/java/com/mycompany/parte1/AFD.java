@@ -36,7 +36,7 @@ public class AFD {
 
             int numEstados = filas.size();
             // SOLO 256 columnas (0-255) para los caracteres ASCII
-            afd.TablaAFD = new int[numEstados][256];
+            afd.TablaAFD = new int[numEstados][257];
 
             System.out.println("Procesando " + numEstados + " estados del AFD...");
 
@@ -47,7 +47,7 @@ public class AFD {
                 System.out.println("Procesando estado: " + nombreEstado);
 
                 // Procesar transiciones ASCII (fila[1] hasta fila[256])
-                for (int j = 1; j <= 256; j++) { // IMPORTANTE: j <= 256
+                for (int j = 1; j <= 257; j++) { // IMPORTANTE: j <= 256
                     int indiceTabla = j - 1; // índice de 0 a 255
                     if (j < fila.length) { // Si existe esa columna en el archivo
                         String valorCelda = fila[j].trim();

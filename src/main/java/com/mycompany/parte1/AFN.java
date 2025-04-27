@@ -5,11 +5,11 @@ import java.util.*;
 import java.util.Queue;
 
 public class AFN {
-    public static Set<AFN> ConjDeAFNs =  new HashSet<>();
+    public static Set<AFN> ConjDeAFNs = new LinkedHashSet<>();
     Estado EdoIni;
-    Set<Estado> EdosAFN = new HashSet<Estado>();
-    Set<Estado> EdosAcept =  new HashSet<Estado>();
-    Set<Character> Alfabeto = new HashSet<>();
+    Set<Estado> EdosAFN = new LinkedHashSet<>();
+    Set<Estado> EdosAcept = new LinkedHashSet<>();
+    Set<Character> Alfabeto = new LinkedHashSet<>();
     boolean AgregoAFNUnionLexico;
     public int IdAFN;
 
@@ -171,19 +171,16 @@ public class AFN {
 
 
     //Metodos para pasar de AFN a AFD
-    public HashSet<Estado> CerraduraEpsilon(Estado e){
-        HashSet<Estado> R= new HashSet<Estado>();//conjunto de esstados
-        Stack<Estado> S= new Stack<Estado>();//pil de estados
+    public LinkedHashSet<Estado> CerraduraEpsilon(Estado e){
+        LinkedHashSet<Estado> R= new LinkedHashSet<>();
+        Stack<Estado> S= new Stack<>();
         Estado aux, Edo;
-        //dejamos vacios el connjunto de estados y la pila
         R.clear();
         S.clear();
-        //estado del que quiero calcular la cerradura
         S.push(e);
-        //mientras no este vacia
         while(!S.isEmpty()){
-            aux = S.pop();//sacamos elemento de la pila
-            R.add(aux);//lo agrego al conjunto de estados dado que faltan por revisarse
+            aux = S.pop();
+            R.add(aux);
             for(Transicion t: aux.getTrans1())
                 if((Edo = t.getEdoTrans(SimbolosEspeciales.EPSILON))!=null)
                     if(!R.contains(Edo))
@@ -191,11 +188,11 @@ public class AFN {
         }
         return R;
     }
-    public HashSet<Estado> CerraduraEpsilon(HashSet<Estado> ConjEdos){
-        HashSet<Estado> R= new HashSet<Estado>();//conjunto de esstados
-        Stack<Estado> S= new Stack<Estado>();//pil de estados
+
+    public LinkedHashSet<Estado> CerraduraEpsilon(Set<Estado> ConjEdos){
+        LinkedHashSet<Estado> R= new LinkedHashSet<>();
+        Stack<Estado> S= new Stack<>();
         Estado aux, Edo;
-        //dejamos vacios el connjunto de estados y la pila
         R.clear();
         S.clear();
         for(Estado e: ConjEdos)
@@ -210,46 +207,38 @@ public class AFN {
         }
         return R;
     }
-    public HashSet<Estado> Mover(Estado Edo, char Simb){
-        HashSet<Estado> C= new HashSet<Estado>();
+
+    public LinkedHashSet<Estado> Mover(Estado Edo, char Simb){
+        LinkedHashSet<Estado> C= new LinkedHashSet<>();
         Estado Aux;
         C.clear();
-        //Para cada transicion obtengo para que estado es la transicion
         for(Transicion t: Edo.getTrans1()){
-            Aux=t.getEdoTrans(Simb);//comprueba si hay transicion con ese simbolo
-            if(Aux!= null) //muestra si hubo una transicion con es simbolo
+            Aux=t.getEdoTrans(Simb);
+            if(Aux!= null)
                 C.add(Aux);
         }
         return C;
     }
-    public HashSet<Estado> Mover(HashSet<Estado> Edos, char Simb){
-        HashSet<Estado> C= new HashSet<Estado>();
+
+    public LinkedHashSet<Estado> Mover(Set<Estado> Edos, char Simb){
+        LinkedHashSet<Estado> C= new LinkedHashSet<>();
         Estado Aux;
         C.clear();
-        //Barrer el conjunto de estados
         for(Estado Edo: Edos)
-            //exactamente lo mismo que lo anterior
             for (Transicion t: Edo.getTrans1()){
-                Aux=t.getEdoTrans(Simb);//comprueba si hay transicion con ese simbolo
-                if(Aux!= null) //muestra si hubo una transicion con es simbolo
+                Aux=t.getEdoTrans(Simb);
+                if(Aux!= null)
                     C.add(Aux);
             }
         return C;
     }
-    public HashSet<Estado> Ir_A(HashSet<Estado> Edos, char Simb) {
-        HashSet<Estado> MoverEstados = Mover(Edos, Simb);
+
+    public LinkedHashSet<Estado> Ir_A(Set<Estado> Edos, char Simb) {
+        LinkedHashSet<Estado> MoverEstados = Mover(Edos, Simb);
         return CerraduraEpsilon(MoverEstados);
     }
 
-
-    private int IndiceCaracter(char[] ArregloAlfabeto, char c){
-        int i;
-        for(i=0; i<ArregloAlfabeto.length; i++)
-            if(ArregloAlfabeto[i]==c)
-                return i;
-        return -1;
-    }
-
+    // También cambiarías HashSet por LinkedHashSet en ConvertirAFNaAFD:
     public AFD ConvertirAFNaAFD() {
         int CardAlfabeto, NumEdosAFD;
         int i, j, r;
@@ -257,8 +246,8 @@ public class AFN {
         ConjIj Ij, Ik;
         boolean existe;
 
-        HashSet<Estado> ConjAux = new HashSet<>();
-        HashSet<ConjIj> EdosAFD = new HashSet<>();
+        LinkedHashSet<Estado> ConjAux = new LinkedHashSet<>();
+        LinkedHashSet<ConjIj> EdosAFD = new LinkedHashSet<>();
         Queue<ConjIj> EdosSinAnalizar = new LinkedList<>();
 
         AFD afd = new AFD();
@@ -269,7 +258,6 @@ public class AFN {
         for (char c : Alfabeto) {
             ArrAlfabeto[i++] = c;
         }
-
 
         j = 0;
         Ij = new ConjIj(CardAlfabeto);
@@ -285,7 +273,7 @@ public class AFN {
 
             for (char c : ArrAlfabeto) {
                 Ik = new ConjIj(CardAlfabeto);
-                Ik.ConjI = Ir_A( Ij.ConjI, c);
+                Ik.ConjI = Ir_A(Ij.ConjI, c);
 
                 if (Ik.ConjI.isEmpty()) {
                     continue;
@@ -312,7 +300,7 @@ public class AFN {
             }
         }
 
-        afd.alfabeto = new HashSet<>(this.Alfabeto);
+        afd.alfabeto = new LinkedHashSet<>(this.Alfabeto);
 
         NumEdosAFD = EdosAFD.size();
         Estado[] estados = new Estado[NumEdosAFD];
@@ -321,12 +309,11 @@ public class AFN {
             estados[I.j] = new Estado();
             if (I.ConjuntoAceptacion()) {
                 estados[I.j].setEdoAcept(true);
-                estados[I.j].setToken1(I.obtenerTokenAceptacion()); // Añade esta línea
+                estados[I.j].setToken1(I.obtenerTokenAceptacion());
                 afd.estadosAceptacion.add(estados[I.j]);
             }
             afd.estados.add(estados[I.j]);
         }
-
 
         afd.estadoInicial = estados[0];
 
@@ -340,6 +327,15 @@ public class AFN {
         }
 
         return afd;
+    }
+
+
+    private int IndiceCaracter(char[] ArregloAlfabeto, char c){
+        int i;
+        for(i=0; i<ArregloAlfabeto.length; i++)
+            if(ArregloAlfabeto[i]==c)
+                return i;
+        return -1;
     }
     //Finalizacion de los metodos para pasar de AFN a AFD
     public void UnionEspecialAFNs(AFN f, int Token) {
