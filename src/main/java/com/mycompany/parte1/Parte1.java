@@ -6,10 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
 
@@ -759,6 +756,7 @@ public class Parte1 extends JFrame {
         });
 
         // Acción del botón para analizar la cadena
+// Acción del botón para analizar la cadena
         analizarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -774,14 +772,70 @@ public class Parte1 extends JFrame {
                     // Crear un nuevo analizador léxico con la cadena y el archivo AFD
                     AnalizadorLex analizador = new AnalizadorLex(cadena, afdFilePath);
 
+                    // Obtener el AFD cargado para poder mostrar información detallada
+                    AFD afd = analizador.getAFD();
+
                     // Limpiar el área de resultados
                     resultadoArea.setText("");
 
-                    // Analizar la cadena y mostrar los tokens encontrados
+                    // Encabezado para el análisis
                     StringBuilder resultado = new StringBuilder();
                     resultado.append("Análisis de la cadena: \"").append(cadena).append("\"\n\n");
-                    resultado.append("Token\tLexema\n");
+
+                    // Sección para análisis paso a paso
+                    resultado.append("Análisis detallado por carácter:\n");
                     resultado.append("---------------------------\n");
+                    resultado.append("Posición\tCarácter\tEstado\tTransición\tToken\n");
+
+                    // Guardar el estado actual del analizador
+                    String originalInput = cadena;
+
+                    // Reiniciar el analizador para análisis paso a paso
+                    analizador.reset();
+
+                    // Análisis paso a paso
+                    int estadoActual = 0; // Estado inicial
+                    for (int i = 0; i < cadena.length(); i++) {
+                        char c = cadena.charAt(i);
+                        int ascii = (int) c;
+
+                        // Obtener la transición del estado actual con el carácter actual
+                        int siguienteEstado = -1;
+                        if (ascii >= 0 && ascii < 256 && estadoActual >= 0 && estadoActual < afd.TablaAFD.length) {
+                            siguienteEstado = afd.TablaAFD[estadoActual][ascii];
+                        }
+
+                        // Verificar si el siguiente estado es un estado de aceptación
+                        int tokenEnEstado = -1;
+                        if (siguienteEstado != -1 && siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
+                            tokenEnEstado = afd.TablaAFD[siguienteEstado][256]; // Columna 256 contiene el token
+                        }
+
+                        resultado.append(i).append("\t")
+                                .append("'").append(c).append("'").append("\t")
+                                .append("S").append(estadoActual).append("\t")
+                                .append(siguienteEstado == -1 ? "ERROR" : "→ S" + siguienteEstado).append("\t")
+                                .append(tokenEnEstado == -1 ? "-" : tokenEnEstado).append("\n");
+
+                        // Actualizar estado actual si la transición es válida
+                        if (siguienteEstado != -1) {
+                            estadoActual = siguienteEstado;
+                        } else {
+                            // Si no hay transición, indicamos un error y salimos del bucle
+                            resultado.append("** Error en la posición ").append(i).append(": No hay transición definida **\n");
+                            break;
+                        }
+                    }
+
+                    resultado.append("\n");
+
+                    // Restaurar el estado del analizador
+                    analizador = new AnalizadorLex(originalInput, afdFilePath);
+
+                    // Sección de tokens reconocidos (análisis completo)
+                    resultado.append("Tokens reconocidos:\n");
+                    resultado.append("---------------------------\n");
+                    resultado.append("Token\tLexema\n");
 
                     int token;
                     while ((token = analizador.yylex()) != SimbolosEspeciales.FIN) {
@@ -796,12 +850,12 @@ public class Parte1 extends JFrame {
                     resultadoArea.setText(resultado.toString());
 
                 } catch (Exception ex) {
-                    resultadoArea.setText("Error al analizar: " + ex.getMessage());
+                    resultadoArea.setText("Error al analizar: " + ex.getMessage() + "\n\n" +
+                            Arrays.toString(ex.getStackTrace()));
                     ex.printStackTrace();
                 }
             }
         });
-
         // Actualizar el panel
         panelNuevo.revalidate();
         panelNuevo.repaint();

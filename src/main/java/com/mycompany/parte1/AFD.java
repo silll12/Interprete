@@ -22,11 +22,12 @@ public class AFD {
 
         try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
             List<String[]> filas = new ArrayList<>();
+            String linea;
 
-            // Leer la primera línea (encabezados)
+            // Leer la primera línea (encabezados) y descartarla
             String lineaEncabezados = br.readLine();
 
-            String linea;
+            // Leer las filas de datos
             while ((linea = br.readLine()) != null) {
                 // Dividir por tabulaciones
                 String[] partes = linea.split("\t");
@@ -34,43 +35,87 @@ public class AFD {
             }
 
             // Crear la tabla con el tamaño adecuado
-            afd.TablaAFD = new int[filas.size()][258];
+            int numEstados = filas.size();
+            // 257 columnas: 256 para caracteres ASCII (0-255) y 1 para el token (índice 256)
+            afd.TablaAFD = new int[numEstados][257];
 
-            // Rellenar la tabla
-            for (int i = 0; i < filas.size(); i++) {
+            System.out.println("Procesando " + numEstados + " estados del AFD...");
+
+            // Procesar cada fila (estado)
+            for (int i = 0; i < numEstados; i++) {
                 String[] fila = filas.get(i);
+                String nombreEstado = fila[0]; // S0, S1, etc.
+                System.out.println("Procesando estado: " + nombreEstado);
 
-                // Rellenar cada columna (caracteres ASCII + token)
-                for (int j = 1; j < fila.length; j++) {
-                    // La columna 0 es el nombre del estado (S0, S1, etc.)
-                    // Las columnas 1-256 son las transiciones para cada caracter
-                    // La columna 257 es el token
+                // Si hay menos columnas que las esperadas, completar con -1
+                int columnasDisponibles = fila.length;
 
-                    int valor;
-                    if (fila[j].equals("-1")) {
-                        valor = -1;
-                    } else if (j < fila.length - 1) { // Si no es la última columna (token)
-                        // Las transiciones pueden ser como "S0", "S1", etc.
-                        if (fila[j].startsWith("S")) {
-                            try {
-                                valor = Integer.parseInt(fila[j].substring(1));
-                            } catch (NumberFormatException e) {
-                                valor = -1;
-                            }
-                        } else {
-                            valor = Integer.parseInt(fila[j]);
-                        }
-                    } else { // Es la columna del token
-                        valor = Integer.parseInt(fila[j]);
+                // Procesar cada columna (transiciones para cada caracter ASCII)
+                // Comenzamos desde j=1 porque la columna 0 es el nombre del estado
+                for (int j = 1; j < columnasDisponibles; j++) {
+                    if (j > 256) {
+                        // Si hay más de 257 columnas (256 caracteres + token), ignorar el exceso
+                        break;
                     }
 
-                    // Ajustar j para que corresponda al índice correcto en TablaAFD
-                    // j-1 porque el primer elemento de fila es el nombre del estado
-                    afd.TablaAFD[i][j-1] = valor;
+                    // Determinar el índice en TablaAFD (j-1 porque el índice 0 en fila es el nombre del estado)
+                    int indiceTabla = j - 1;
+
+                    // Obtener el valor en la celda
+                    String valorCelda = fila[j].trim();
+                    int valorEntero;
+
+                    if (valorCelda.equals("-1")) {
+                        valorEntero = -1;
+                    } else if (valorCelda.startsWith("S")) {
+                        try {
+                            // Convertir S0, S1, etc. a 0, 1, etc.
+                            valorEntero = Integer.parseInt(valorCelda.substring(1));
+                        } catch (NumberFormatException e) {
+                            System.out.println("Error al parsear el estado: " + valorCelda);
+                            valorEntero = -1;
+                        }
+                    } else {
+                        try {
+                            valorEntero = Integer.parseInt(valorCelda);
+                        } catch (NumberFormatException e) {
+                            System.out.println("Error al parsear el valor: " + valorCelda);
+                            valorEntero = -1;
+                        }
+                    }
+
+                    // Guardar el valor en la tabla
+                    afd.TablaAFD[i][indiceTabla] = valorEntero;
+                }
+
+                // Completar las columnas restantes con -1 si es necesario
+                for (int j = columnasDisponibles - 1; j < 257; j++) {
+                    if (j > 0) { // No modificar el índice 0 que corresponde al estado
+                        afd.TablaAFD[i][j-1] = -1;
+                    }
                 }
             }
 
-            System.out.println("AFD cargado exitosamente con " + filas.size() + " estados.");
+            // Configurar estados del AFD
+            for (int i = 0; i < numEstados; i++) {
+                Estado estado = new Estado(i);
+
+                // Si el estado tiene un token asociado (columna 256), establecerlo
+                int token = afd.TablaAFD[i][256];
+                if (token != -1) {
+                    estado.setToken1(token);
+                    afd.estadosAceptacion.add(estado);
+                }
+
+                afd.estados.add(estado);
+
+                // El estado 0 es el inicial
+                if (i == 0) {
+                    afd.estadoInicial = estado;
+                }
+            }
+
+            System.out.println("AFD cargado exitosamente con " + numEstados + " estados.");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -94,4 +139,5 @@ public class AFD {
     public String ObtenerToken(Estado estado) {
         return EstadoAceptacion(estado) ? String.valueOf(estado.getToken1()) : "-1";
     }
+
 }

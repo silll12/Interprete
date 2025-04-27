@@ -111,4 +111,31 @@ public class AnalizadorLex {
         IndiceCaracterActual = Pila.pop();
         return true;
     }
+
+    /**
+     * Returns the AFD used by this analyzer
+     */
+    public AFD getAFD() {
+        return AutomataFD;
+    }
+
+    /**
+     * Returns the current position in the input string
+     */
+    public int getPosition() {
+        return IndiceCaracterActual;
+    }
+
+    /**
+     * Resets the analyzer to the beginning of the input
+     */
+    public void reset() {
+        this.IndiceCaracterActual = 0;
+        this.Lexema = "";
+        this.PasoEdoAcept = false;
+        this.IniLexema = 0;
+        this.FinLexema = -1;
+        this.token = -1;
+        this.Pila.clear();
+    }
 }
