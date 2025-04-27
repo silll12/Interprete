@@ -771,8 +771,6 @@ public class Parte1 extends JFrame {
                 try {
                     // Crear un nuevo analizador léxico con la cadena y el archivo AFD
                     AnalizadorLex analizador = new AnalizadorLex(cadena, afdFilePath);
-
-                    // Obtener el AFD cargado para poder mostrar información detallada
                     AFD afd = analizador.getAFD();
 
                     // Limpiar el área de resultados
@@ -787,55 +785,111 @@ public class Parte1 extends JFrame {
                     resultado.append("---------------------------\n");
                     resultado.append("Posición\tCarácter\tEstado\tTransición\tToken\n");
 
-                    // Guardar el estado actual del analizador
-                    String originalInput = cadena;
+                    // Variable para rastrear la posición global en la cadena
+                    int posicionGlobal = 0;
 
-                    // Reiniciar el analizador para análisis paso a paso
-                    analizador.reset();
+                    // Análisis de la cadena completa como subcadenas
+                    while (posicionGlobal < cadena.length()) {
+                        int mejorEstadoInicial = -1;
+                        int mejorLongitudToken = 0;
+                        int mejorToken = -1;
 
-                    // Análisis paso a paso
-                    int estadoActual = 0; // Estado inicial
-                    for (int i = 0; i < cadena.length(); i++) {
-                        char c = cadena.charAt(i);
-                        int ascii = (int) c;
+                        // Intentar reconocer subcadenas desde cada estado posible
+                        for (Estado estado : afd.estados) {
+                            int estadoId = estado.getIdEstado();
+                            int longitudActual = 0;
+                            int estadoActual = estadoId;
+                            boolean tokenReconocido = false;
+                            int ultimoTokenReconocido = -1;
+                            int longitudUltimoToken = 0;
 
-                        // Obtener la transición del estado actual con el carácter actual
-                        int siguienteEstado = -1;
-                        if (ascii >= 0 && ascii < 256 && estadoActual >= 0 && estadoActual < afd.TablaAFD.length) {
-                            siguienteEstado = afd.TablaAFD[estadoActual][ascii];
+                            // Intentar reconocer desde este estado inicial
+                            for (int i = 0; i < cadena.length() - posicionGlobal; i++) {
+                                char c = cadena.charAt(posicionGlobal + i);
+                                int ascii = (int) c;
+
+                                // Verificar si hay transición válida
+                                int siguienteEstado = -1;
+                                if (ascii >= 0 && ascii < 256 && estadoActual >= 0 && estadoActual < afd.TablaAFD.length) {
+                                    siguienteEstado = afd.TablaAFD[estadoActual][ascii];
+                                }
+
+                                // Si no hay transición, terminamos con este estado inicial
+                                if (siguienteEstado == -1) {
+                                    break;
+                                }
+
+                                estadoActual = siguienteEstado;
+                                longitudActual = i + 1;
+
+                                // Verificar si el estado es de aceptación
+                                if (siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
+                                    int tokenEnEstado = afd.TablaAFD[siguienteEstado][256];
+                                    if (tokenEnEstado != -1) {
+                                        tokenReconocido = true;
+                                        ultimoTokenReconocido = tokenEnEstado;
+                                        longitudUltimoToken = longitudActual;
+                                    }
+                                }
+                            }
+
+                            // Si encontramos un token y es mejor que el anterior, lo guardamos
+                            if (tokenReconocido && longitudUltimoToken > mejorLongitudToken) {
+                                mejorEstadoInicial = estadoId;
+                                mejorLongitudToken = longitudUltimoToken;
+                                mejorToken = ultimoTokenReconocido;
+                            }
                         }
 
-                        // Verificar si el siguiente estado es un estado de aceptación
-                        int tokenEnEstado = -1;
-                        if (siguienteEstado != -1 && siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
-                            tokenEnEstado = afd.TablaAFD[siguienteEstado][256]; // Columna 256 contiene el token
-                        }
+                        // Si encontramos un token válido
+                        if (mejorLongitudToken > 0) {
+                            // Mostrar el análisis detallado del token reconocido
+                            int estadoActual = mejorEstadoInicial;
+                            for (int i = 0; i < mejorLongitudToken; i++) {
+                                char c = cadena.charAt(posicionGlobal + i);
+                                int ascii = (int) c;
 
-                        resultado.append(i).append("\t")
-                                .append("'").append(c).append("'").append("\t")
-                                .append("S").append(estadoActual).append("\t")
-                                .append(siguienteEstado == -1 ? "ERROR" : "→ S" + siguienteEstado).append("\t")
-                                .append(tokenEnEstado == -1 ? "-" : tokenEnEstado).append("\n");
+                                int siguienteEstado = afd.TablaAFD[estadoActual][ascii];
+                                int tokenEnEstado = -1;
+                                if (siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
+                                    tokenEnEstado = afd.TablaAFD[siguienteEstado][256];
+                                }
 
-                        // Actualizar estado actual si la transición es válida
-                        if (siguienteEstado != -1) {
-                            estadoActual = siguienteEstado;
+                                resultado.append(posicionGlobal + i).append("\t")
+                                        .append("'").append(c).append("'").append("\t")
+                                        .append("S").append(estadoActual).append("\t")
+                                        .append("→ S").append(siguienteEstado).append("\t")
+                                        .append(tokenEnEstado == -1 ? "-" : tokenEnEstado).append("\n");
+
+                                estadoActual = siguienteEstado;
+                            }
+
+                            // Avanzar la posición global
+                            posicionGlobal += mejorLongitudToken;
                         } else {
-                            // Si no hay transición, indicamos un error y salimos del bucle
-                            resultado.append("** Error en la posición ").append(i).append(": No hay transición definida **\n");
-                            break;
+                            // No se reconoció ningún token, reportar error y avanzar un carácter
+                            char c = cadena.charAt(posicionGlobal);
+                            resultado.append(posicionGlobal).append("\t")
+                                    .append("'").append(c).append("'").append("\t")
+                                    .append("S0").append("\t")
+                                    .append("ERROR").append("\t")
+                                    .append("-").append("\n");
+                            resultado.append("** Error en la posición ").append(posicionGlobal)
+                                    .append(": No hay transición definida para '").append(c).append("' **\n");
+
+                            posicionGlobal++;
                         }
                     }
 
                     resultado.append("\n");
 
-                    // Restaurar el estado del analizador
-                    analizador = new AnalizadorLex(originalInput, afdFilePath);
-
-                    // Sección de tokens reconocidos (análisis completo)
-                    resultado.append("Tokens reconocidos:\n");
+                    // Sección de tokens reconocidos (usando el analizador original para comparación)
+                    resultado.append("Tokens reconocidos (método original):\n");
                     resultado.append("---------------------------\n");
                     resultado.append("Token\tLexema\n");
+
+                    // Reiniciar el analizador para el análisis completo
+                    analizador = new AnalizadorLex(cadena, afdFilePath);
 
                     int token;
                     while ((token = analizador.yylex()) != SimbolosEspeciales.FIN) {
@@ -843,6 +897,74 @@ public class Parte1 extends JFrame {
                             resultado.append("ERROR\t\"").append(analizador.Lexema).append("\"\n");
                         } else {
                             resultado.append(token).append("\t\"").append(analizador.Lexema).append("\"\n");
+                        }
+                    }
+
+                    // Tokens reconocidos con el nuevo enfoque de subcadenas
+                    resultado.append("\nTokens reconocidos (método de subcadenas):\n");
+                    resultado.append("---------------------------\n");
+                    resultado.append("Token\tLexema\n");
+
+                    // Reiniciar para el análisis con el nuevo método
+                    posicionGlobal = 0;
+
+                    while (posicionGlobal < cadena.length()) {
+                        // Código similar al anterior pero solo para mostrar los tokens
+                        // Similar al análisis detallado, pero sin mostrar cada paso
+
+                        int mejorEstadoInicial = -1;
+                        int mejorLongitudToken = 0;
+                        int mejorToken = -1;
+
+                        for (Estado estado : afd.estados) {
+                            int estadoId = estado.getIdEstado();
+                            int estadoActual = estadoId;
+                            int longitudActual = 0;
+                            boolean tokenReconocido = false;
+                            int ultimoTokenReconocido = -1;
+                            int longitudUltimoToken = 0;
+
+                            for (int i = 0; i < cadena.length() - posicionGlobal; i++) {
+                                char c = cadena.charAt(posicionGlobal + i);
+                                int ascii = (int) c;
+
+                                int siguienteEstado = -1;
+                                if (ascii >= 0 && ascii < 256 && estadoActual >= 0 && estadoActual < afd.TablaAFD.length) {
+                                    siguienteEstado = afd.TablaAFD[estadoActual][ascii];
+                                }
+
+                                if (siguienteEstado == -1) {
+                                    break;
+                                }
+
+                                estadoActual = siguienteEstado;
+                                longitudActual = i + 1;
+
+                                if (siguienteEstado >= 0 && siguienteEstado < afd.TablaAFD.length) {
+                                    int tokenEnEstado = afd.TablaAFD[siguienteEstado][256];
+                                    if (tokenEnEstado != -1) {
+                                        tokenReconocido = true;
+                                        ultimoTokenReconocido = tokenEnEstado;
+                                        longitudUltimoToken = longitudActual;
+                                    }
+                                }
+                            }
+
+                            if (tokenReconocido && longitudUltimoToken > mejorLongitudToken) {
+                                mejorEstadoInicial = estadoId;
+                                mejorLongitudToken = longitudUltimoToken;
+                                mejorToken = ultimoTokenReconocido;
+                            }
+                        }
+
+                        if (mejorLongitudToken > 0) {
+                            String lexema = cadena.substring(posicionGlobal, posicionGlobal + mejorLongitudToken);
+                            resultado.append(mejorToken).append("\t\"").append(lexema).append("\"\n");
+                            posicionGlobal += mejorLongitudToken;
+                        } else {
+                            // No se reconoció ningún token, marcar como error y avanzar
+                            resultado.append("ERROR\t\"").append(cadena.charAt(posicionGlobal)).append("\"\n");
+                            posicionGlobal++;
                         }
                     }
 
@@ -855,8 +977,7 @@ public class Parte1 extends JFrame {
                     ex.printStackTrace();
                 }
             }
-        });
-        // Actualizar el panel
+        });        // Actualizar el panel
         panelNuevo.revalidate();
         panelNuevo.repaint();
     }
