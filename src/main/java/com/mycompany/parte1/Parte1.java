@@ -16,6 +16,8 @@ import javax.swing.table.DefaultTableModel;
 public class Parte1 extends JFrame {
     private JPanel panelNuevo;
     private HashMap<Integer, AFN> AFNS = new HashMap<>();
+    private String archivoSeleccionadoRuta = null;
+
 
     public Parte1() {
         setTitle("Interprete");
@@ -86,6 +88,10 @@ public class Parte1 extends JFrame {
             case "Unión Especial":
                 panelUnionEspecialAFN();
 
+                break;
+
+            case "ER a AFN" :
+                panelERaAFN();
                 break;
         }
 
@@ -573,6 +579,86 @@ public class Parte1 extends JFrame {
             }
         });
     }
+
+    private void panelERaAFN() {
+
+
+        panelNuevo.removeAll();
+
+
+        panelNuevo.add(new JLabel("Crear AFN desde una expresión regular"));
+
+
+        panelNuevo.add(new JLabel("Expresión Regular:"));
+        JTextField expresionRegularTextField = new JTextField(20);
+        panelNuevo.add(expresionRegularTextField);
+
+
+        panelNuevo.add(new JLabel("ID para el AFN:"));
+        JTextField idAFNTextField = new JTextField(20);
+        panelNuevo.add(idAFNTextField);
+
+        // Botón "Seleccionar archivo"
+        JButton seleccionarArchivoButton = new JButton("Seleccionar archivo");
+        seleccionarArchivoButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Seleccionar archivo");
+                int seleccion = fileChooser.showOpenDialog(null);
+                if (seleccion == JFileChooser.APPROVE_OPTION) {
+                    File archivoSeleccionado = fileChooser.getSelectedFile();
+                    archivoSeleccionadoRuta = archivoSeleccionado.getAbsolutePath();
+                    System.out.println("Archivo seleccionado: " + archivoSeleccionadoRuta);
+                }
+            }
+        });
+        panelNuevo.add(seleccionarArchivoButton);
+
+        // Botón "Crear AFN"
+        JButton crearAFNButton = new JButton("Crear AFN");
+        crearAFNButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    String expresionRegular = expresionRegularTextField.getText();
+                    int idAFN = Integer.parseInt(idAFNTextField.getText());
+
+                    if (expresionRegular.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Por favor ingresa una expresión regular.");
+                        return;
+                    }
+
+                    if (AFNS.containsKey(idAFN)) {
+                        JOptionPane.showMessageDialog(null, "Ya existe un AFN con este ID.");
+                        return;
+                    }
+
+                    if (archivoSeleccionadoRuta == null) {
+                        JOptionPane.showMessageDialog(null, "No se ha seleccionado un archivo.");
+                        return;
+                    }
+
+                    ER_AFN erAFN = new ER_AFN(expresionRegular, archivoSeleccionadoRuta);
+                    if (erAFN.iniConversion()) {
+                        AFN afnResult = erAFN.result;
+                        AFNS.put(idAFN, afnResult);
+                        JOptionPane.showMessageDialog(null, "AFN creado exitosamente.");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Error al crear el AFN.");
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "No se pudo crear el AFN. Asegúrate de ingresar valores válidos.");
+                }
+            }
+        });
+        panelNuevo.add(crearAFNButton);
+
+
+    }
+
+
+
 
 
     public static void main(String[] args) {
