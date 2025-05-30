@@ -148,43 +148,124 @@ public class Parte1 extends JFrame {
             }
         });
     }
-    private void panelUnirAFNS(){
-        panelNuevo.add(new JLabel("seleccionar AFN 1:"));
-        JComboBox<Integer> comboAFN1 = new JComboBox<>(AFNS.keySet().toArray(new Integer[0]));
-        panelNuevo.add(comboAFN1);
-        panelNuevo.add(new JLabel("Seleccionar AFN2:"));
-        JComboBox<Integer> comboAFN2 = new JComboBox<>(AFNS.keySet().toArray(new Integer[0]));
-        panelNuevo.add(comboAFN2);
-        // botón para unir los AFNs
-        JButton unirButton = new JButton("Unir AFNs");
-        panelNuevo.add(unirButton);
-        // acción del botón "Unir AFNs"
+
+    private void panelUnirAFNS() {
+        // Limpiar el panel y configurar layout
+        panelNuevo.removeAll();
+        panelNuevo.setLayout(new BorderLayout());
+
+        // Creamos el modelo para la tabla
+        String[] columnNames = {"ID", "Seleccionar AFN"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                // Make the second column (index 1) use checkboxes
+                return columnIndex == 1 ? Boolean.class : Object.class;
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // Allow editing checkbox column only
+                return column == 1;
+            }
+        };
+
+        // Crear el JTable con el modelo
+        JTable table = new JTable(tableModel);
+        table.setRowHeight(30); // Aumentar altura de las filas
+        table.setFont(new Font("Arial", Font.PLAIN, 14)); // Fuente más grande
+
+        // Agregamos los AFNs a la tabla
+        for (Integer id : AFNS.keySet()) {
+            tableModel.addRow(new Object[]{id, false});
+        }
+
+        // Crear un JScrollPane para la tabla con tamaño preferido
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setPreferredSize(new Dimension(300, 300)); // Tamaño ajustado para 2 columnas
+
+        // Panel para los controles inferiores
+        JPanel panelControles = new JPanel(new FlowLayout());
+
+        // Botón para unir los AFNs
+        JButton unirButton = new JButton("Unir AFNs Seleccionados");
+        unirButton.setFont(new Font("Arial", Font.BOLD, 14)); // Fuente más grande
+        panelControles.add(unirButton);
+
+        // Agregar componentes al panel principal
+        panelNuevo.add(scrollPane, BorderLayout.CENTER);
+        panelNuevo.add(panelControles, BorderLayout.SOUTH);
+
         unirButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    // obtenemos los ids seleccionados de los ComboBox y guardamos como enteros en ID1 y ID2
-                    Integer id1 = (Integer) comboAFN1.getSelectedItem();
-                    Integer id2 = (Integer) comboAFN2.getSelectedItem();
-                    // buscamos los AFNs de acuerdo con los ids obtenidos anteriormente y asignamos AFN1 y AFN2
-                    AFN afn1 = AFNS.get(id1);
-                    AFN afn2 = AFNS.get(id2);
-                    // verificamos si los AFNs existen
-                    if (afn1 == null || afn2 == null) {
-                        JOptionPane.showMessageDialog(null, "Uno o ambos AFNs no existen.");
+                    // Crear listas para los AFNs seleccionados
+                    List<AFN> afnsSeleccionados = new ArrayList<>();
+                    List<Integer> idsSeleccionados = new ArrayList<>();
+
+                    // Recorrer las filas de la tabla para obtener los AFNs seleccionados
+                    for (int i = 0; i < table.getRowCount(); i++) {
+                        boolean seleccionado = (boolean) table.getValueAt(i, 1);
+                        if (seleccionado) {
+                            Integer id = (Integer) table.getValueAt(i, 0);
+                            AFN afn = AFNS.get(id);
+                            if (afn != null) {
+                                afnsSeleccionados.add(afn);
+                                idsSeleccionados.add(id);
+                            }
+                        }
+                    }
+
+                    if (afnsSeleccionados.size() < 2) {
+                        JOptionPane.showMessageDialog(null, "Debe seleccionar al menos dos AFNs.");
                         return;
                     }
-                    // llamamos al método unir
-                    afn1.UnirAFN(afn2);
-                    AFNS.remove(id2); //nos ayudara a remover el segundo AFN, similar a como el profe lo realiza
+
+                    // Encontrar el ID más bajo entre los AFNs seleccionados
+                    int idMinimo = idsSeleccionados.stream().min(Integer::compare).orElseThrow();
+
+                    // Usar el primer AFN como base
+                    AFN afnBase = afnsSeleccionados.get(0);
+
+                    // Crear lista de AFNs a unir (sin incluir el base)
+                    List<AFN> afnsAUnir = new ArrayList<>();
+                    List<Integer> idsARemover = new ArrayList<>();
+
+                    for (int i = 1; i < afnsSeleccionados.size(); i++) {
+                        afnsAUnir.add(afnsSeleccionados.get(i));
+                        idsARemover.add(idsSeleccionados.get(i));
+                    }
+
+                    // Unir todos los AFNs
+                    afnBase.UnirMultiplesAFN(afnsAUnir);
+
+                    // Asignar el ID más bajo al nuevo AFN
+                    afnBase.IdAFN = idMinimo;
+
+                    // Eliminar los AFNs que ya fueron unidos excepto el base
+                    for (Integer id : idsARemover) {
+                        AFNS.remove(id);
+                    }
+
+                    // Actualizar o mantener el AFN base con el ID más bajo
+                    AFNS.put(idMinimo, afnBase);
+
                     JOptionPane.showMessageDialog(null, "AFNs unidos exitosamente.");
+
+                    // Actualizar la tabla después de la operación
+                    tableModel.setRowCount(0);
+                    for (Integer id : AFNS.keySet()) {
+                        tableModel.addRow(new Object[]{id, false});
+                    }
+
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(null, "Error al unir los AFNs: " + ex.getMessage());
                 }
             }
         });
     }
-    private void panelCerraduraPositiva(){
+        private void panelCerraduraPositiva(){
         panelNuevo.add(new JLabel("Aplicar Cerradura +:"));
         JComboBox<Integer> comboCerraduraPositiva = new JComboBox<>(AFNS.keySet().toArray(new Integer[0]));
         panelNuevo.add(comboCerraduraPositiva);

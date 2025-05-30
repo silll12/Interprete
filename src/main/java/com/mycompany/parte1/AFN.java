@@ -56,6 +56,48 @@ public class AFN {
         AgregoAFNUnionLexico=false;
         return this;
     }
+    public AFN UnirMultiplesAFN(List<AFN> afns) {
+        if (afns == null || afns.isEmpty()) {
+            return this;
+        }
+
+        Estado e1 = new Estado(); // Nuevo estado inicial
+        Estado e2 = new Estado(); // Nuevo estado de aceptación
+        e2.setEdoAcept(true);
+
+        // Crear una lista que incluya 'this' y los demás AFNs
+        List<AFN> todosAFNs = new ArrayList<>();
+        todosAFNs.add(this);
+        todosAFNs.addAll(afns);
+
+        // Para cada AFN: conectar e1 a su estado inicial, redirigir sus estados de aceptación a e2
+        for (AFN afn : todosAFNs) {
+            // Transición epsilon desde e1 al estado inicial del AFN
+            e1.getTrans1().add(new Transicion(SimbolosEspeciales.EPSILON, afn.EdoIni));
+
+            // Para cada estado de aceptación, conectar a e2 y desmarcar
+            for (Estado acept : afn.EdosAcept) {
+                acept.agregarTransicion(new Transicion(SimbolosEspeciales.EPSILON, e2));
+                acept.setEdoAcept(false);
+            }
+
+            // Agregar todos los estados y el alfabeto al AFN principal (this)
+            this.EdosAFN.addAll(afn.EdosAFN);
+            this.Alfabeto.addAll(afn.Alfabeto);
+
+            // Limpiar estados de aceptación del AFN actual
+            afn.EdosAcept.clear();
+        }
+
+        // Configurar el nuevo AFN
+        this.EdoIni = e1;
+        this.EdosAcept.clear();
+        this.EdosAcept.add(e2);
+        this.EdosAFN.add(e1);
+        this.EdosAFN.add(e2);
+
+        return this;
+    }
 
     public AFN UnirAFN(AFN f2){
         Estado e1 = new Estado();
