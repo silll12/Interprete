@@ -15,6 +15,7 @@ public class AnalizadorLex {
     char CaracterActual;
     Stack<Integer> Pila = new Stack<>();
 
+
     public AnalizadorLex() {
         CadenaSigma = "";
         PasoEdoAcept = false;
@@ -36,6 +37,37 @@ public class AnalizadorLex {
         token = -1;
         Pila.clear();
         AutomataFD = AFD.cargarAFDDesdeArchivo(new File(FileAFD));
+    }
+
+    // Método para obtener el estado actual del analizador léxico
+    public ClassEstadoAnalizLexico GetEdoAnalizadorLexico() {
+        ClassEstadoAnalizLexico EdoActualAnaliz = new ClassEstadoAnalizLexico();
+        EdoActualAnaliz.CaracterActual = CaracterActual;
+        EdoActualAnaliz.EdoActual = EdoActual;
+        EdoActualAnaliz.EdoTransicion = EdoTransicion;
+        EdoActualAnaliz.FinLexema = FinLexema;
+        EdoActualAnaliz.IndiceCaracterActual = IndiceCaracterActual;
+        EdoActualAnaliz.IniLexema = IniLexema;
+        EdoActualAnaliz.Lexema = Lexema;
+        EdoActualAnaliz.PasoPortEdoAcept = PasoEdoAcept;
+        EdoActualAnaliz.token = token;
+        EdoActualAnaliz.Pila = (Stack<Integer>) Pila.clone();
+        return EdoActualAnaliz;
+    }
+
+    // Método para establecer el estado del analizador léxico
+    public boolean SetEdoAnalizadorLexico(ClassEstadoAnalizLexico e) {
+        CaracterActual = e.CaracterActual;
+        EdoActual = e.EdoActual;
+        EdoTransicion = e.EdoTransicion;
+        FinLexema = e.FinLexema;
+        IndiceCaracterActual = e.IndiceCaracterActual;
+        IniLexema = e.IniLexema;
+        Lexema = e.Lexema;
+        PasoEdoAcept = e.PasoPortEdoAcept;
+        token = e.token;
+        Pila = (Stack<Integer>) e.Pila.clone();
+        return true;
     }
 
     public void SetSigma(String sigma) {
