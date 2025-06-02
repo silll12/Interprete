@@ -20,6 +20,7 @@ public class Estado {
 
     private int idEstado1;
     private boolean edoAcept1;
+    private int Token1 = -1;
     private Set<Transicion> trans1 = new HashSet<>();
 
     public Estado() {
@@ -27,6 +28,15 @@ public class Estado {
         this.edoAcept1 = false;
     }
 
+    // Add this constructor to support cargarAFDDesdeArchivo method
+    public Estado(int id) {
+        this.idEstado1 = id;
+        this.edoAcept1 = false;
+    }
+
+
+    public int getToken1() {return Token1;}
+    public void setToken1(int token1) {Token1 = token1;}
     public Set<Transicion> getTrans1() {
         return trans1;
     }
@@ -38,5 +48,4 @@ public class Estado {
     public int getIdEstado() {return idEstado1;}
     public void setIdEstado(int idEstado1) {this.idEstado1 = idEstado1;}
     public void agregarTransicion(Transicion t) {this.trans1.add(t);}
-
 }
