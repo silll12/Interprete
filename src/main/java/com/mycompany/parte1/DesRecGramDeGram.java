@@ -13,6 +13,16 @@ public class DesRecGramDeGram {
     public HashSet<String> Vn = new HashSet<String>();
     public HashSet<String> Vt = new HashSet<String>();
 
+    // Constructor limpio para uso interno en TablaLL1Numerada
+    public DesRecGramDeGram() {
+        this.Gramatica = "";
+        this.L = null;
+        this.ArrReglas = new ElementRegla[100];
+        this.NumReglas = 0;
+        this.Vn = new HashSet<>();
+        this.Vt = new HashSet<>();
+    }
+
     public DesRecGramDeGram(String sigma, String FileAFD) {
         this.Gramatica = sigma;
         this.L = new AnalizadorLex(Gramatica, FileAFD);

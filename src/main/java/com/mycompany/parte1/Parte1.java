@@ -1188,7 +1188,7 @@ public class Parte1 extends JFrame {
         JScrollPane scrollTexto = new JScrollPane(areaTexto);
         scrollTexto.setBorder(BorderFactory.createTitledBorder("Gramática"));
 
-        JButton botonCargar = new JButton("Cargar gramática");
+        JButton botonCargar = new JButton("Procesar Gramática");
 
         DefaultListModel<String> modeloLista = new DefaultListModel<>();
         JList<String> listaReglas = new JList<>(modeloLista);
@@ -1208,22 +1208,20 @@ public class Parte1 extends JFrame {
 
             try {
                 List<Regla> reglas = Regla.cargarGramaticasDesdeTexto(texto);
-                for (Regla r : reglas) modeloLista.addElement(r.toString());
+                reglas.forEach(r -> modeloLista.addElement(r.toString()));
 
                 Map<String, Set<String>> simbolos = Regla.clasificarSimbolos(reglas);
                 Set<String> noTerminales = simbolos.get("noTerminales");
                 Set<String> terminales = new HashSet<>(simbolos.get("terminales"));
                 terminales.add("$");
 
-                JFrame ventana = new JFrame("Símbolos detectados");
-                ventana.setSize(700, 500);
-                ventana.setLayout(new BorderLayout(10, 10));
+                TablaLL1Numerada tablaLL1 = new TablaLL1Numerada(reglas);
+                JTable tablaVisual = tablaLL1.generarTablaVisual();
+
 
                 DefaultTableModel modeloNT = new DefaultTableModel(new String[]{"No Terminal"}, 0);
                 noTerminales.forEach(nt -> modeloNT.addRow(new Object[]{nt}));
                 JTable tablaNT = new JTable(modeloNT);
-                JScrollPane scrollNT = new JScrollPane(tablaNT);
-                scrollNT.setBorder(BorderFactory.createTitledBorder("No Terminales"));
 
                 DefaultTableModel modeloT = new DefaultTableModel(new String[]{"Terminal", "Token"}, 0) {
                     public boolean isCellEditable(int row, int col) { return col == 1; }
@@ -1231,8 +1229,6 @@ public class Parte1 extends JFrame {
                 };
                 terminales.forEach(t -> modeloT.addRow(new Object[]{t, null}));
                 JTable tablaT = new JTable(modeloT);
-                JScrollPane scrollT = new JScrollPane(tablaT);
-                scrollT.setBorder(BorderFactory.createTitledBorder("Terminales"));
 
                 JTextField campoSigma = new JTextField(20);
                 JButton btnProbarLexico = new JButton("Probar léxico");
@@ -1256,9 +1252,13 @@ public class Parte1 extends JFrame {
                     mostrarVentanaAnalisisLexico(campoSigma.getText(), afdPath[0]);
                 });
 
+                JFrame ventana = new JFrame("Gramática Procesada");
+                ventana.setSize(1000, 600);
+                ventana.setLayout(new BorderLayout(10, 10));
+
                 JPanel panelTablas = new JPanel(new GridLayout(1, 2));
-                panelTablas.add(scrollNT);
-                panelTablas.add(scrollT);
+                panelTablas.add(new JScrollPane(tablaNT));
+                panelTablas.add(new JScrollPane(tablaT));
 
                 JPanel panelBotones = new JPanel(new FlowLayout());
                 panelBotones.add(btnCargarAFD);
@@ -1266,13 +1266,18 @@ public class Parte1 extends JFrame {
                 panelBotones.add(campoSigma);
                 panelBotones.add(btnProbarLexico);
 
-                ventana.add(panelTablas, BorderLayout.CENTER);
+                JTabbedPane pestañas = new JTabbedPane();
+                pestañas.add("Símbolos", panelTablas);
+                pestañas.add("Tabla LL(1)", new JScrollPane(tablaVisual));
+                pestañas.add("Reglas", new JScrollPane(listaReglas));
+
+                ventana.add(pestañas, BorderLayout.CENTER);
                 ventana.add(panelBotones, BorderLayout.SOUTH);
                 ventana.setLocationRelativeTo(null);
                 ventana.setVisible(true);
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "Error al cargar gramática: " + ex.getMessage());
+                JOptionPane.showMessageDialog(null, "Error al procesar gramática: " + ex.getMessage());
             }
         });
 
