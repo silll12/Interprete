@@ -2,7 +2,6 @@ package com.mycompany.parte1;
 
 import java.io.*;
 import java.util.*;
-import javax.swing.JOptionPane;
 
 public class AFD {
     public int[][] TablaAFD;
@@ -16,8 +15,6 @@ public class AFD {
         estadosAceptacion = new HashSet<>();
         alfabeto = new HashSet<>();
     }
-
-
     public static AFD cargarAFDDesdeArchivo(File archivo) {
         AFD afd = new AFD();
 
@@ -27,6 +24,7 @@ public class AFD {
 
             // Leer la primera línea (encabezados) y descartarla
             String lineaEncabezados = br.readLine();
+            String[] encabezados = lineaEncabezados.split("\t"); // ← aquí guardamos los símbolos ASCII
 
             // Leer las filas de datos
             while ((linea = br.readLine()) != null) {
@@ -80,6 +78,7 @@ public class AFD {
 
                 // Crear objeto Estado
                 Estado estado = new Estado(i);
+                estado.setNombre(nombreEstado); // aquí estás usando el nombre del estado como símbolo
 
                 // Leer el token (fila[257])
                 if (fila.length > 257) {
@@ -89,11 +88,16 @@ public class AFD {
                         if (token != -1) {
                             estado.setToken1(token);
                             afd.estadosAceptacion.add(estado);
+
+                            // Asignar el símbolo asociado usando encabezados
+                            String simbolo = afd.getSimboloPorToken(token);
+                            estado.setSimboloAsociado(simbolo);
                         }
                     } catch (NumberFormatException e) {
                         System.out.println("Error al parsear el token: " + tokenStr);
                     }
                 }
+
 
                 afd.estados.add(estado);
 
@@ -115,17 +119,8 @@ public class AFD {
 
         return afd;
     }
-
-    public Estado getEstadoInicial() {
-        return estadoInicial;
-    }
-
     public boolean EstadoAceptacion(Estado estado) {
         return estadosAceptacion.contains(estado);
-    }
-
-    public String ObtenerToken(Estado estado) {
-        return EstadoAceptacion(estado) ? String.valueOf(estado.getToken1()) : "-1";
     }
     public Estado obtenerEstadoPorId(int id) {
         for (Estado estado : estados) {
@@ -135,5 +130,23 @@ public class AFD {
         }
         return null; // No encontrado
     }
+    public String getSimboloPorToken(int tokenBuscado) {
+        for (Estado estado : estadosAceptacion) {
+            if (estado.getToken1() == tokenBuscado) {
+                int estadoId = estado.getIdEstado(); // fila en la matriz TablaAFD
 
+                // Recorremos todas las columnas (ASCII 0–255)
+                for (int col = 0; col < 256; col++) {
+                    for (int fila = 0; fila < TablaAFD.length; fila++) {
+                        if (TablaAFD[fila][col] == estadoId) {
+                            // Si desde 'fila' se llega al estado actual por el carácter col
+                            char simbolo = (char) col;
+                            return Character.isISOControl(simbolo) ? "<" + col + ">" : String.valueOf(simbolo);
+                        }
+                    }
+                }
+            }
+        }
+        return "N/A";
+    }
 }

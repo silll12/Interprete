@@ -4,10 +4,6 @@
  */
 package com.mycompany.parte1;
 
-/**
- *
- * @author silvi
- */
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,29 +19,35 @@ public class Estado {
     private int Token1 = -1;
     private Set<Transicion> trans1 = new HashSet<>();
 
+
+    private String nombre;
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
     public Estado() {
         this.idEstado1 = ContadorIdEstado++;
         this.edoAcept1 = false;
     }
-
-    // Add this constructor to support cargarAFDDesdeArchivo method
     public Estado(int id) {
         this.idEstado1 = id;
         this.edoAcept1 = false;
     }
-
-
     public int getToken1() {return Token1;}
     public void setToken1(int token1) {Token1 = token1;}
     public Set<Transicion> getTrans1() {
         return trans1;
-    }
-    public void setTrans1(Set<Transicion> trans1) {
-        this.trans1 = trans1;
     }
     public boolean getEdoAcept() {return edoAcept1;}
     public void setEdoAcept(boolean edoAcept1) {this.edoAcept1 = edoAcept1;}
     public int getIdEstado() {return idEstado1;}
     public void setIdEstado(int idEstado1) {this.idEstado1 = idEstado1;}
     public void agregarTransicion(Transicion t) {this.trans1.add(t);}
+    private String simboloAsociado = "";
+    public void setSimboloAsociado(String simbolo) {
+        this.simboloAsociado = simbolo;
+    }
+    public String getSimboloAsociado() {
+        return simboloAsociado;
+    }
 }

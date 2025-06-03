@@ -154,7 +154,6 @@ public class Parte1 extends JFrame {
             }
         });
     }
-
     private void panelUnirAFNS() {
         // Limpiar el panel y configurar layout
         panelNuevo.removeAll();
@@ -271,7 +270,7 @@ public class Parte1 extends JFrame {
             }
         });
     }
-        private void panelCerraduraPositiva(){
+    private void panelCerraduraPositiva(){
         panelNuevo.add(new JLabel("Aplicar Cerradura +:"));
         JComboBox<Integer> comboCerraduraPositiva = new JComboBox<>(AFNS.keySet().toArray(new Integer[0]));
         panelNuevo.add(comboCerraduraPositiva);
@@ -414,7 +413,6 @@ public class Parte1 extends JFrame {
             }
         });
     }
-
     private void Tabla(AFD afd) {
         //arreglo para la creación de la tabla ascii
         String[] columnas = new String[258];
@@ -469,7 +467,6 @@ public class Parte1 extends JFrame {
         frameTabla.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frameTabla.setVisible(true);
     }
-
     private void guardarTabla(Object[][] data, String[] columnas) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Guardar tabla como .txt");
@@ -516,8 +513,6 @@ public class Parte1 extends JFrame {
             }
         }
     }
-
-
     private Estado obtenerEstadoPorCaracter(Estado estado, char c) {
         for (Transicion transicion : estado.getTrans1()) {
             if (transicion.getEdoTrans(c) != null) {
@@ -526,7 +521,6 @@ public class Parte1 extends JFrame {
         }
         return null;
     }
-
     private void panelUnionEspecialAFN() {
         // Limpiar el panel y configurar layout
         panelNuevo.removeAll();
@@ -664,7 +658,6 @@ public class Parte1 extends JFrame {
             }
         });
     }
-
     private void panelERaAFN() {
 
 
@@ -741,7 +734,6 @@ public class Parte1 extends JFrame {
 
 
     }
-
     private void panelAnalizarCadena() {
         // Configuración inicial del panel
         panelNuevo.removeAll();
@@ -1021,7 +1013,6 @@ public class Parte1 extends JFrame {
         panelNuevo.revalidate();
         panelNuevo.repaint();
     }
-
     // Método para mostrar los pasos con formato
     private void mostrarPasosHasta(JTextPane textPane, List<PasoAnalisis> pasos, int hasta) {
         StyledDocument doc = textPane.getStyledDocument();
@@ -1054,7 +1045,6 @@ public class Parte1 extends JFrame {
             }
         }
     }
-
     private void ejecutarAnalisisLexico(String cadena, String rutaAFD, JTextPane resultadoPane, JTextPane detallePane, JButton botonSiguiente, List<PasoAnalisis> pasos, int[] pasoActual, Map<Integer, Color> tokenColorMap) {
         try {
             AnalizadorLex analizador = new AnalizadorLex(cadena, rutaAFD);
@@ -1103,7 +1093,6 @@ public class Parte1 extends JFrame {
             JOptionPane.showMessageDialog(null, "Error en análisis: " + ex.getMessage());
         }
     }
-
     private void mostrarVentanaAnalisisLexico(String cadenaInicial, String rutaAFD) {
         JFrame frameLexico = new JFrame("Prueba Léxica");
         frameLexico.setSize(700, 500);
@@ -1179,7 +1168,6 @@ public class Parte1 extends JFrame {
         frameLexico.setLocationRelativeTo(null);
         frameLexico.setVisible(true);
     }
-
     private void panelCargarGramatica() {
         panelNuevo.removeAll();
         panelNuevo.setLayout(new BorderLayout(10, 10));
@@ -1223,16 +1211,18 @@ public class Parte1 extends JFrame {
                 noTerminales.forEach(nt -> modeloNT.addRow(new Object[]{nt}));
                 JTable tablaNT = new JTable(modeloNT);
 
-                DefaultTableModel modeloT = new DefaultTableModel(new String[]{"Terminal", "Token"}, 0) {
+                DefaultTableModel modeloT = new DefaultTableModel(new String[]{"Terminal", "Token", "Símbolo del AFD"}, 0) {
                     public boolean isCellEditable(int row, int col) { return col == 1; }
                     public Class<?> getColumnClass(int column) { return column == 1 ? Integer.class : String.class; }
                 };
-                terminales.forEach(t -> modeloT.addRow(new Object[]{t, null}));
+                terminales.forEach(t -> modeloT.addRow(new Object[]{t, null, ""}));
                 JTable tablaT = new JTable(modeloT);
+
 
                 JTextField campoSigma = new JTextField(20);
                 JButton btnProbarLexico = new JButton("Probar léxico");
                 String[] afdPath = {null};
+
 
                 JButton btnCargarAFD = new JButton("Seleccionar AFD Léxico");
                 btnCargarAFD.addActionListener(ev -> {
@@ -1241,8 +1231,35 @@ public class Parte1 extends JFrame {
                     if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
                         afdPath[0] = chooser.getSelectedFile().getAbsolutePath();
                         JOptionPane.showMessageDialog(null, "AFD cargado: " + chooser.getSelectedFile().getName());
+
+                        // Cargar el AFD
+                        AFD afd = AFD.cargarAFDDesdeArchivo(new File(afdPath[0]));
+
+
+                        // Asociar símbolo del AFD a cada terminal según su token
+                        for (int i = 0; i < modeloT.getRowCount(); i++) {
+                            Object tokenObj = modeloT.getValueAt(i, 1);
+                            if (tokenObj != null) {
+                                int token = Integer.parseInt(tokenObj.toString());
+
+
+                                // Buscar estado de aceptación con ese token
+                                for (Estado e2 : afd.estados) {
+                                    if (afd.EstadoAceptacion(e2) && e2.getToken1() == token) {
+                                        // Usamos directamente el nombre del terminal como símbolo
+                                        String simbolo = e2.getSimboloAsociado();  // ✅ este debe traer el símbolo correcto, como "("
+                                        modeloT.setValueAt(simbolo, i, 2);        // lo muestra en la columna "Símbolo del AFD"
+                                        break;
+                                    }
+                                }
+
+                                // Escribimos el resultado en la tercera columna ("Símbolo del AFD")
+                            }
+                        }
+
                     }
                 });
+
 
                 btnProbarLexico.addActionListener(ev -> {
                     if (afdPath[0] == null || campoSigma.getText().isEmpty()) {
