@@ -72,7 +72,7 @@ public class ER_AFN {
         AFN f2 = new AFN();
         Token = L.yylex();
 
-        if (Token == 20) { // CONC
+        if (Token == 20) { // CONCATENAR
 
             if (C(f2)) {
                 f.ConcAFN(f2); // Acción semántica: concatenación

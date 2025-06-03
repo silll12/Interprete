@@ -30,11 +30,13 @@ public class Parte1 extends JFrame {
                 "Cerradura positiva",
                 "Cerradura de Kleene",
                 "Opcional",
-                "Unión Especial",//Union para anlizador Lexico
+                "Unión Especial",
                 "Convertir AFN a AFD",
                 "Analizar una cadena",
-                "Crear AFN desde una expresión regular"
+                "Crear AFN desde una expresión regular",
+                "Cargar gramática LL(1)" // 🔹 nueva opción
         };
+
         JComboBox<String> comboBox = new JComboBox<>(opciones);
         comboBox.setPreferredSize(new Dimension(200, 25));
         add(comboBox, BorderLayout.NORTH);
@@ -91,6 +93,10 @@ public class Parte1 extends JFrame {
             case "Crear AFN desde una expresión regular" :
                 panelERaAFN();
                 break;
+            case "Cargar gramática LL(1)":
+                panelCargarGramatica();
+                break;
+
         }
 
         panelNuevo.revalidate();
@@ -1047,6 +1053,231 @@ public class Parte1 extends JFrame {
                 }
             }
         }
+    }
+
+    private void ejecutarAnalisisLexico(String cadena, String rutaAFD, JTextPane resultadoPane, JTextPane detallePane, JButton botonSiguiente, List<PasoAnalisis> pasos, int[] pasoActual, Map<Integer, Color> tokenColorMap) {
+        try {
+            AnalizadorLex analizador = new AnalizadorLex(cadena, rutaAFD);
+            AFD afd = analizador.getAFD();
+
+            Color[] colores = {
+                    new Color(41, 128, 185), new Color(155, 89, 182),
+                    new Color(231, 76, 60), new Color(39, 174, 96),
+                    new Color(243, 156, 18), new Color(26, 188, 156)
+            };
+
+            StyledDocument docDetalle = detallePane.getStyledDocument();
+            SimpleAttributeSet headerAttrs = new SimpleAttributeSet();
+            StyleConstants.setBold(headerAttrs, true);
+            docDetalle.insertString(docDetalle.getLength(), "Análisis de: \"" + cadena + "\"\n\n", headerAttrs);
+            docDetalle.insertString(docDetalle.getLength(), "Posición\tCarácter\tEstado\tToken\n", headerAttrs);
+
+            int token;
+            while ((token = analizador.yylex()) != SimbolosEspeciales.FIN) {
+                String lexema = analizador.Lexema;
+                int start = analizador.IniLexema;
+
+                if (!tokenColorMap.containsKey(token)) {
+                    tokenColorMap.put(token, colores[tokenColorMap.size() % colores.length]);
+                }
+
+                SimpleAttributeSet attrs = new SimpleAttributeSet();
+                StyleConstants.setForeground(attrs, tokenColorMap.get(token));
+                StyleConstants.setBold(attrs, true);
+
+                resultadoPane.getStyledDocument().insertString(resultadoPane.getStyledDocument().getLength(), lexema + " ", attrs);
+
+                PasoAnalisis paso = new PasoAnalisis(lexema, tokenColorMap.get(token), token);
+                pasos.add(paso);
+
+                docDetalle.insertString(docDetalle.getLength(),
+                        start + "\t'" + lexema + "'\tS?\t" + token + "\n", attrs); // Estado real omitido
+            }
+
+            if (!pasos.isEmpty()) {
+                mostrarPasosHasta(resultadoPane, pasos, pasoActual[0]);
+                botonSiguiente.setEnabled(true);
+            }
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(null, "Error en análisis: " + ex.getMessage());
+        }
+    }
+
+    private void mostrarVentanaAnalisisLexico(String cadenaInicial, String rutaAFD) {
+        JFrame frameLexico = new JFrame("Prueba Léxica");
+        frameLexico.setSize(700, 500);
+        frameLexico.setLayout(new BorderLayout());
+
+        List<PasoAnalisis> pasos = new ArrayList<>();
+        int[] pasoActual = {0};
+        Map<Integer, Color> tokenColorMap = new HashMap<>();
+
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        JLabel labelSigma = new JLabel("Sigma:");
+        JTextField campoCadena = new JTextField(cadenaInicial, 30);
+        JButton botonAnalizar = new JButton("Analizar");
+        JButton botonSiguiente = new JButton("Siguiente");
+        botonSiguiente.setEnabled(false);
+
+        JTextPane resultadoPane = new JTextPane();
+        resultadoPane.setEditable(false);
+        JScrollPane scrollResultado = new JScrollPane(resultadoPane);
+
+        JTextPane detallePane = new JTextPane();
+        detallePane.setEditable(false);
+        JScrollPane scrollDetalle = new JScrollPane(detallePane);
+
+        // -- Posicionamiento
+        gbc.gridx = 0; gbc.gridy = 0;
+        mainPanel.add(labelSigma, gbc);
+        gbc.gridx = 1;
+        mainPanel.add(campoCadena, gbc);
+        gbc.gridx = 2;
+        mainPanel.add(botonAnalizar, gbc);
+        gbc.gridx = 3;
+        mainPanel.add(botonSiguiente, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 4;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0; gbc.weighty = 0.5;
+        mainPanel.add(scrollResultado, gbc);
+
+        gbc.gridy = 2;
+        gbc.weighty = 0.5;
+        mainPanel.add(scrollDetalle, gbc);
+
+        frameLexico.add(mainPanel, BorderLayout.CENTER);
+
+        // -- Acción de analizar
+        botonAnalizar.addActionListener(e -> {
+            pasos.clear();
+            pasoActual[0] = 0;
+            resultadoPane.setText("");
+            detallePane.setText("");
+            tokenColorMap.clear();
+
+            String cadena = campoCadena.getText();
+
+            ejecutarAnalisisLexico(cadena, rutaAFD, resultadoPane, detallePane, botonSiguiente, pasos, pasoActual, tokenColorMap);
+        });
+
+        // -- Acción de siguiente
+        botonSiguiente.addActionListener(e -> {
+            if (pasoActual[0] < pasos.size() - 1) {
+                pasoActual[0]++;
+                mostrarPasosHasta(resultadoPane, pasos, pasoActual[0]);
+            } else {
+                JOptionPane.showMessageDialog(null, "Fin del análisis.");
+            }
+        });
+
+        frameLexico.setLocationRelativeTo(null);
+        frameLexico.setVisible(true);
+    }
+
+    private void panelCargarGramatica() {
+        panelNuevo.removeAll();
+        panelNuevo.setLayout(new BorderLayout(10, 10));
+
+        JTextArea areaTexto = new JTextArea(8, 40);
+        JScrollPane scrollTexto = new JScrollPane(areaTexto);
+        scrollTexto.setBorder(BorderFactory.createTitledBorder("Gramática"));
+
+        JButton botonCargar = new JButton("Cargar gramática");
+
+        DefaultListModel<String> modeloLista = new DefaultListModel<>();
+        JList<String> listaReglas = new JList<>(modeloLista);
+        JScrollPane scrollLista = new JScrollPane(listaReglas);
+        scrollLista.setBorder(BorderFactory.createTitledBorder("Reglas cargadas"));
+
+        JPanel panelSuperior = new JPanel(new BorderLayout(5, 5));
+        panelSuperior.add(scrollTexto, BorderLayout.CENTER);
+        panelSuperior.add(botonCargar, BorderLayout.SOUTH);
+
+        panelNuevo.add(panelSuperior, BorderLayout.NORTH);
+        panelNuevo.add(scrollLista, BorderLayout.CENTER);
+
+        botonCargar.addActionListener(e -> {
+            modeloLista.clear();
+            String texto = areaTexto.getText();
+
+            try {
+                List<Regla> reglas = Regla.cargarGramaticasDesdeTexto(texto);
+                for (Regla r : reglas) modeloLista.addElement(r.toString());
+
+                Map<String, Set<String>> simbolos = Regla.clasificarSimbolos(reglas);
+                Set<String> noTerminales = simbolos.get("noTerminales");
+                Set<String> terminales = new HashSet<>(simbolos.get("terminales"));
+                terminales.add("$");
+
+                JFrame ventana = new JFrame("Símbolos detectados");
+                ventana.setSize(700, 500);
+                ventana.setLayout(new BorderLayout(10, 10));
+
+                DefaultTableModel modeloNT = new DefaultTableModel(new String[]{"No Terminal"}, 0);
+                noTerminales.forEach(nt -> modeloNT.addRow(new Object[]{nt}));
+                JTable tablaNT = new JTable(modeloNT);
+                JScrollPane scrollNT = new JScrollPane(tablaNT);
+                scrollNT.setBorder(BorderFactory.createTitledBorder("No Terminales"));
+
+                DefaultTableModel modeloT = new DefaultTableModel(new String[]{"Terminal", "Token"}, 0) {
+                    public boolean isCellEditable(int row, int col) { return col == 1; }
+                    public Class<?> getColumnClass(int column) { return column == 1 ? Integer.class : String.class; }
+                };
+                terminales.forEach(t -> modeloT.addRow(new Object[]{t, null}));
+                JTable tablaT = new JTable(modeloT);
+                JScrollPane scrollT = new JScrollPane(tablaT);
+                scrollT.setBorder(BorderFactory.createTitledBorder("Terminales"));
+
+                JTextField campoSigma = new JTextField(20);
+                JButton btnProbarLexico = new JButton("Probar léxico");
+                String[] afdPath = {null};
+
+                JButton btnCargarAFD = new JButton("Seleccionar AFD Léxico");
+                btnCargarAFD.addActionListener(ev -> {
+                    JFileChooser chooser = new JFileChooser();
+                    chooser.setDialogTitle("Seleccionar AFD (.txt)");
+                    if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                        afdPath[0] = chooser.getSelectedFile().getAbsolutePath();
+                        JOptionPane.showMessageDialog(null, "AFD cargado: " + chooser.getSelectedFile().getName());
+                    }
+                });
+
+                btnProbarLexico.addActionListener(ev -> {
+                    if (afdPath[0] == null || campoSigma.getText().isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Selecciona AFD y escribe una cadena.");
+                        return;
+                    }
+                    mostrarVentanaAnalisisLexico(campoSigma.getText(), afdPath[0]);
+                });
+
+                JPanel panelTablas = new JPanel(new GridLayout(1, 2));
+                panelTablas.add(scrollNT);
+                panelTablas.add(scrollT);
+
+                JPanel panelBotones = new JPanel(new FlowLayout());
+                panelBotones.add(btnCargarAFD);
+                panelBotones.add(new JLabel("Sigma:"));
+                panelBotones.add(campoSigma);
+                panelBotones.add(btnProbarLexico);
+
+                ventana.add(panelTablas, BorderLayout.CENTER);
+                ventana.add(panelBotones, BorderLayout.SOUTH);
+                ventana.setLocationRelativeTo(null);
+                ventana.setVisible(true);
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(null, "Error al cargar gramática: " + ex.getMessage());
+            }
+        });
+
+        panelNuevo.revalidate();
+        panelNuevo.repaint();
     }
 
     public static void main(String[] args) {

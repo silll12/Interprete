@@ -102,30 +102,41 @@ public class AFN {
     public AFN UnirAFN(AFN f2){
         Estado e1 = new Estado();
         Estado e2 = new Estado();
-        //e1 tendra dos transiciones epsilon, una al edo inicial del AFN this y otra al de AFN2
-        Transicion t1 = new Transicion(SimbolosEspeciales.EPSILON, this.EdoIni );
+
+        // ✅ CORRECCIÓN: Ambas transiciones epsilon van desde e1 (estado inicial)
+        Transicion t1 = new Transicion(SimbolosEspeciales.EPSILON, this.EdoIni);
         Transicion t2 = new Transicion(SimbolosEspeciales.EPSILON, f2.EdoIni);
         e1.getTrans1().add(t1);
-        e2.getTrans1().add(t2);
-        //Cada estado de aceptacion de this y f2 tendran una trans epsilon
-        //Los de aceptacion dejaran de ser de aceptacion
-        for(Estado e:this.EdosAcept){
-            e.agregarTransicion(new Transicion(SimbolosEspeciales.EPSILON,e2));
+        e1.getTrans1().add(t2);  // ✅ CAMBIO: era e2.getTrans1().add(t2)
+
+        // Cada estado de aceptacion de this y f2 tendrán una transición epsilon hacia e2
+        // Los de aceptacion dejarán de ser de aceptacion
+        for(Estado e : this.EdosAcept){
+            e.agregarTransicion(new Transicion(SimbolosEspeciales.EPSILON, e2));
             e.setEdoAcept(false);
         }
-        for(Estado e: f2.EdosAcept){
-            e.agregarTransicion(new Transicion(SimbolosEspeciales.EPSILON,e2));
+        for(Estado e : f2.EdosAcept){
+            e.agregarTransicion(new Transicion(SimbolosEspeciales.EPSILON, e2));
             e.setEdoAcept(false);
         }
 
+        // Limpiar estados de aceptación anteriores
         this.EdosAcept.clear();
         f2.EdosAcept.clear();
-        this.EdoIni=e1;
+
+        // Configurar nuevo AFN unido
+        this.EdoIni = e1;
         e2.setEdoAcept(true);
         this.EdosAcept.add(e2);
+
+        // ✅ CORRECCIÓN: Agregar nuevos estados al conjunto de estados del AFN
+        this.EdosAFN.add(e1);        // ✅ AÑADIDO: faltaba agregar e1 a los estados
+        this.EdosAFN.add(e2);        // ✅ AÑADIDO: faltaba agregar e2 a los estados
         this.EdosAFN.addAll(f2.EdosAFN);
-        this.EdosAcept.add(e1);
-        this.EdosAcept.add(e2);
+
+        // ✅ ELIMINADO: this.EdosAcept.add(e1); - e1 es inicial, no final
+        // ✅ ELIMINADO: this.EdosAcept.add(e2); - ya se agregó arriba
+
         this.Alfabeto.addAll(f2.Alfabeto);
         return this;
     }
