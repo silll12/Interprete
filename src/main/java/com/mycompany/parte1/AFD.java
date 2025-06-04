@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 import javax.swing.JOptionPane;
 
+
 public class AFD {
     public int[][] TablaAFD;
     Set<Estado> estados;
@@ -136,4 +137,99 @@ public class AFD {
         return null; // No encontrado
     }
 
+<<<<<<< Updated upstream
+=======
+                // Recorremos todas las columnas (ASCII 0–255)
+                for (int col = 0; col < 256; col++) {
+                    for (int fila = 0; fila < TablaAFD.length; fila++) {
+                        if (TablaAFD[fila][col] == estadoId) {
+                            // Si desde 'fila' se llega al estado actual por el carácter col
+                            char simbolo = (char) col;
+                            return Character.isISOControl(simbolo) ? "<" + col + ">" : String.valueOf(simbolo);
+                        }
+                    }
+                }
+            }
+        }
+        return "N/A";
+    }
+    public List<Integer> analizarCadena(String entrada) {
+        List<Integer> tokens = new ArrayList<>();
+        int estadoActual = estadoInicial.getIdEstado();
+        StringBuilder lexema = new StringBuilder();
+
+        for (int i = 0; i < entrada.length(); i++) {
+            char c = entrada.charAt(i);
+            int ascii = (int) c;
+
+            if (ascii < 0 || ascii >= 256) {
+                throw new RuntimeException("Carácter fuera de rango ASCII: " + c);
+            }
+
+            int siguienteEstado = TablaAFD[estadoActual][ascii];
+
+            if (siguienteEstado == -1) {
+                Estado estadoObj = obtenerEstadoPorId(estadoActual);
+                if (estadoObj != null && EstadoAceptacion(estadoObj)) {
+                    tokens.add(estadoObj.getToken1());
+                    estadoActual = estadoInicial.getIdEstado();
+                    lexema.setLength(0); // limpiar
+                    i--; // volver a procesar este carácter desde el nuevo estado
+                } else {
+                    throw new RuntimeException("Error léxico en: '" + lexema.toString() + c + "'");
+                }
+            } else {
+                lexema.append(c);
+                estadoActual = siguienteEstado;
+            }
+        }
+
+        // Verificar si último estado es de aceptación
+        Estado finalEstado = obtenerEstadoPorId(estadoActual);
+        if (finalEstado != null && EstadoAceptacion(finalEstado)) {
+            tokens.add(finalEstado.getToken1());
+        } else {
+            throw new RuntimeException("Cadena termina en estado no aceptado: " + lexema.toString());
+        }
+
+        return tokens;
+    }
+    public List<LexemaToken> analizarConLexemas(String entrada) {
+        List<LexemaToken> resultado = new ArrayList<>();
+        int estadoActual = estadoInicial.getIdEstado();
+        StringBuilder lexema = new StringBuilder();
+
+        for (int i = 0; i < entrada.length(); i++) {
+            char c = entrada.charAt(i);
+            int ascii = (int) c;
+
+            int siguiente = TablaAFD[estadoActual][ascii];
+            if (siguiente == -1) {
+                Estado estado = obtenerEstadoPorId(estadoActual);
+                if (EstadoAceptacion(estado)) {
+                    resultado.add(new LexemaToken(estado.getToken1(), lexema.toString()));
+                    estadoActual = estadoInicial.getIdEstado();
+                    lexema.setLength(0);
+                    i--;
+                } else {
+                    throw new RuntimeException("Error léxico en: " + lexema + c);
+                }
+            } else {
+                lexema.append(c);
+                estadoActual = siguiente;
+            }
+        }
+
+        Estado estado = obtenerEstadoPorId(estadoActual);
+        if (EstadoAceptacion(estado)) {
+            resultado.add(new LexemaToken(estado.getToken1(), lexema.toString()));
+        } else {
+            throw new RuntimeException("Cadena no aceptada: " + lexema.toString());
+        }
+
+        return resultado;
+    }
+
+
+>>>>>>> Stashed changes
 }

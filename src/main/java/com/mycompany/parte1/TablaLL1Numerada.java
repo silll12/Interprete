@@ -3,6 +3,7 @@ package com.mycompany.parte1;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TablaLL1Numerada {
     private final List<Regla> reglas;
@@ -133,4 +134,30 @@ public class TablaLL1Numerada {
 
         return new JTable(modelo);
     }
+    // Retorna si el símbolo es un no terminal presente en la tabla
+    public boolean esNoTerminal(String simbolo) {
+        return tabla.containsKey(simbolo);
+    }
+
+    // Obtiene la producción asociada (como lista de símbolos) usando los números de regla
+    public List<String> getProduccion(String noTerminal, String terminal) {
+        String idStr = tabla.getOrDefault(noTerminal, new HashMap<>()).getOrDefault(terminal, "-1");
+
+        if (idStr.equals("-1")) return null;
+
+        int id = Integer.parseInt(idStr);
+
+        // Buscar el ElementRegla que tiene ese ID
+        for (Map.Entry<ElementRegla, Integer> entry : mapaProduccion.entrySet()) {
+            if (entry.getValue() == id) {
+                return entry.getKey().ListaLadoDerecho.stream()
+                        .map(n -> n.Simbolo)
+                        .collect(Collectors.toList());
+
+            }
+        }
+
+        return null;
+    }
+
 }

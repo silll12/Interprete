@@ -1,6 +1,7 @@
 package com.mycompany.parte1;
 
 import javax.swing.*;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -1232,8 +1233,15 @@ public class Parte1 extends JFrame {
 
                 JTextField campoSigma = new JTextField(20);
                 JButton btnProbarLexico = new JButton("Probar léxico");
+                JButton btnProbarSintactico = new JButton("Probar Sintáctico"); // ✅ aquí
                 String[] afdPath = {null};
 
+<<<<<<< Updated upstream
+=======
+
+
+
+>>>>>>> Stashed changes
                 JButton btnCargarAFD = new JButton("Seleccionar AFD Léxico");
                 btnCargarAFD.addActionListener(ev -> {
                     JFileChooser chooser = new JFileChooser();
@@ -1252,6 +1260,58 @@ public class Parte1 extends JFrame {
                     mostrarVentanaAnalisisLexico(campoSigma.getText(), afdPath[0]);
                 });
 
+                btnProbarSintactico.addActionListener(ev -> {
+                    if (afdPath[0] == null || campoSigma.getText().isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Selecciona AFD y escribe una cadena.");
+                        return;
+                    }
+
+                    try {
+                        // 1. Volver a cargar el AFD y analizar la cadena
+                        AFD afd = AFD.cargarAFDDesdeArchivo(new File(afdPath[0]));
+                        List<LexemaToken> lista = afd.analizarConLexemas(campoSigma.getText());
+
+                        List<Integer> tokens = new ArrayList<>();
+                        List<String> lexemas = new ArrayList<>();
+
+                        for (LexemaToken lt : lista) {
+                            tokens.add(lt.token);
+                            lexemas.add(lt.lexema);
+                        }
+
+                        // 2. Construir mapa token → terminal desde tablaT
+                        Map<Integer, String> tokenToTerminal = new HashMap<>();
+                        for (int i = 0; i < modeloT.getRowCount(); i++) {
+                            Object tokenObj = modeloT.getValueAt(i, 1);
+                            Object simboloObj = modeloT.getValueAt(i, 0);
+                            if (tokenObj != null && simboloObj != null) {
+                                int token = Integer.parseInt(tokenObj.toString());
+                                String terminal = simboloObj.toString();
+                                tokenToTerminal.put(token, terminal);
+                            }
+                        }
+                        Map<String, String> terminalToLexema = new HashMap<>();
+                        for (int i = 0; i < modeloT.getRowCount(); i++) {
+                            Object terminal = modeloT.getValueAt(i, 0);
+                            Object lexema = modeloT.getValueAt(i, 2);
+                            if (terminal != null && lexema != null) {
+                                terminalToLexema.put(terminal.toString(), lexema.toString());
+                            }
+                        }
+
+                        // 3. Ejecutar el análisis sintáctico
+                        AnalizadorSintacticoLL1 analizador = new AnalizadorSintacticoLL1(tablaLL1, tokens, tokenToTerminal);
+                        List<PasoAnalisis> pasos = analizador.analizar("E", lexemas, terminalToLexema);
+
+                        // 4. Mostrar la ventana de análisis sintáctico paso a paso
+                        mostrarVentanaAnalisisSintactico(pasos);
+
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Error en análisis sintáctico: " + ex.getMessage());
+                    }
+                });
+
+
                 JFrame ventana = new JFrame("Gramática Procesada");
                 ventana.setSize(1000, 600);
                 ventana.setLayout(new BorderLayout(10, 10));
@@ -1265,6 +1325,9 @@ public class Parte1 extends JFrame {
                 panelBotones.add(new JLabel("Sigma:"));
                 panelBotones.add(campoSigma);
                 panelBotones.add(btnProbarLexico);
+                panelBotones.add(btnProbarSintactico);
+
+
 
                 JTabbedPane pestañas = new JTabbedPane();
                 pestañas.add("Símbolos", panelTablas);
@@ -1283,6 +1346,82 @@ public class Parte1 extends JFrame {
 
         panelNuevo.revalidate();
         panelNuevo.repaint();
+    }
+    // Esta clase se encarga de mostrar paso a paso el análisis sintáctico en una ventana interactiva
+    // con botones para avanzar, retroceder y mostrar todos los pasos de forma visual y colorida
+
+    // Clase que crea una ventana para mostrar el análisis sintáctico paso a paso con colores
+    // Clase que crea una ventana para mostrar el análisis sintáctico paso a paso con colores
+    private void mostrarVentanaAnalisisSintactico(List<PasoAnalisis> pasos) {
+        JFrame ventana = new JFrame("Análisis Sintáctico Paso a Paso");
+        ventana.setSize(800, 400);
+        ventana.setLayout(new BorderLayout(10, 10));
+
+        String[] columnas = {"Pila", "Entrada", "Acción"};
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0);
+        JTable tabla = new JTable(modelo) {
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component c = super.prepareRenderer(renderer, row, column);
+                String accion = (String) getValueAt(row, 2);
+
+                if (accion == null) return c;
+
+                c.setBackground(Color.white); // fondo por defecto
+
+                if (column == 1) { // solo colorear columna "Entrada"
+                    if (accion.equalsIgnoreCase("pop")) {
+                        c.setBackground(new Color(200, 255, 200)); // verde claro
+                    } else if (accion.equalsIgnoreCase("aceptar")) {
+                        c.setBackground(new Color(150, 255, 150)); // verde fuerte
+                    } else if (accion.equalsIgnoreCase("error")) {
+                        c.setBackground(new Color(255, 180, 180)); // rojo claro
+                    } else if (accion.contains("→")) {
+                        c.setBackground(new Color(200, 200, 255)); // azul claro
+                    }
+                }
+                return c;
+            }
+        };
+        JScrollPane scroll = new JScrollPane(tabla);
+
+        JButton btnAvanzar = new JButton("Siguiente paso");
+        JButton btnTodo = new JButton("Mostrar todo");
+        JButton btnReiniciar = new JButton("Reiniciar");
+
+        JPanel panelBotones = new JPanel(new FlowLayout());
+        panelBotones.add(btnAvanzar);
+        panelBotones.add(btnTodo);
+        panelBotones.add(btnReiniciar);
+
+        ventana.add(scroll, BorderLayout.CENTER);
+        ventana.add(panelBotones, BorderLayout.SOUTH);
+        ventana.setLocationRelativeTo(null);
+        ventana.setVisible(true);
+
+        final int[] indice = {0};
+        btnAvanzar.addActionListener(e -> {
+            if (indice[0] < pasos.size()) {
+                agregarFilaPaso(modelo, pasos.get(indice[0]));
+                indice[0]++;
+            }
+        });
+
+        btnTodo.addActionListener(e -> {
+            while (indice[0] < pasos.size()) {
+                agregarFilaPaso(modelo, pasos.get(indice[0]));
+                indice[0]++;
+            }
+        });
+
+        btnReiniciar.addActionListener(e -> {
+            modelo.setRowCount(0);
+            indice[0] = 0;
+        });
+    }
+
+    private void agregarFilaPaso(DefaultTableModel modelo, PasoAnalisis paso) {
+        modelo.addRow(new Object[]{paso.pila, paso.entrada, paso.accion});
     }
 
     public static void main(String[] args) {
