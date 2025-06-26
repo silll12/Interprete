@@ -86,4 +86,7 @@ public class TablaLL1 {
         des.NumReglas = des.ArrReglas.length;
         return des.Follow(simbolo);
     }
+    public List<Regla> getReglas() {
+        return this.reglas;
+    }
 }

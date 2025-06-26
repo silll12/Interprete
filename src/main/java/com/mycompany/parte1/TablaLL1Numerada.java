@@ -159,5 +159,8 @@ public class TablaLL1Numerada {
 
         return null;
     }
+    public List<Regla> getReglas() {
+        return this.reglas;
+    }
 
 }

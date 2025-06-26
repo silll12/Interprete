@@ -10,6 +10,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.table.DefaultTableModel;
 
 public class Parte1 extends JFrame {
@@ -1309,11 +1310,34 @@ public class Parte1 extends JFrame {
                         }
 
                         // 3. Ejecutar el análisis sintáctico
+
+                        String simboloInicial = tablaLL1.getReglas().get(0).getNoTerminal(); // ✅ dinámico desde la primera regla
                         AnalizadorSintacticoLL1 analizador = new AnalizadorSintacticoLL1(tablaLL1, tokens, tokenToTerminal);
-                        List<PasoAnalisis> pasos = analizador.analizar("E", lexemas, terminalToLexema);
+                        List<PasoAnalisis> pasos = analizador.analizar(simboloInicial, lexemas, terminalToLexema);
+                        List<String> derivaciones = new ArrayList<>();
+                        String derivacionActual = simboloInicial;
+
+
+                        for (PasoAnalisis paso : pasos) {
+                            String accion = paso.accion;
+                            if (accion != null && accion.contains("→")) {
+                                String[] partes = accion.split("→");
+                                String lhs = partes[0].trim();
+                                String rhs = partes[1].trim();
+
+                                String rhsTraducido = Arrays.stream(rhs.split("\\s+"))
+                                        .map(s -> terminalToLexema.getOrDefault(s, s)) // traduce si es terminal
+                                        .collect(Collectors.joining(" "));
+
+                                derivacionActual = derivacionActual.replaceFirst(lhs, rhs.equals("epsilon") ? "" : rhsTraducido).trim();
+                                derivaciones.add("⇒ " + derivacionActual);
+                            }
+                        }
+
+                        mostrarDerivacion(derivaciones);
 
                         // 4. Mostrar la ventana de análisis sintáctico paso a paso
-                        mostrarVentanaAnalisisSintactico(pasos);
+                        mostrarVentanaAnalisisSintactico(pasos, simboloInicial);
 
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(null, "Error en análisis sintáctico: " + ex.getMessage());
@@ -1361,8 +1385,8 @@ public class Parte1 extends JFrame {
 
     // Clase que crea una ventana para mostrar el análisis sintáctico paso a paso con colores
     // Clase que crea una ventana para mostrar el análisis sintáctico paso a paso con colores
-    private void mostrarVentanaAnalisisSintactico(List<PasoAnalisis> pasos) {
-        JFrame ventana = new JFrame("Análisis Sintáctico Paso a Paso");
+    private void mostrarVentanaAnalisisSintactico(List<PasoAnalisis> pasos, String simboloInicial) {
+        JFrame ventana = new JFrame("Análisis Sintáctico Paso a Paso"  + simboloInicial);
         ventana.setSize(800, 400);
         ventana.setLayout(new BorderLayout(10, 10));
 
@@ -1432,6 +1456,25 @@ public class Parte1 extends JFrame {
     private void agregarFilaPaso(DefaultTableModel modelo, PasoAnalisis paso) {
         modelo.addRow(new Object[]{paso.pila, paso.entrada, paso.accion});
     }
+    private void mostrarDerivacion(List<String> derivaciones) {
+        JFrame ventana = new JFrame("Derivación de la Cadena");
+        ventana.setSize(600, 400);
+
+        JTextArea area = new JTextArea();
+        area.setEditable(false);
+        JScrollPane scroll = new JScrollPane(area);
+
+        StringBuilder sb = new StringBuilder("Derivación:\n");
+        for (String paso : derivaciones) {
+            sb.append(paso).append("\n");
+        }
+
+        area.setText(sb.toString());
+        ventana.add(scroll);
+        ventana.setLocationRelativeTo(null);
+        ventana.setVisible(true);
+    }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Parte1());

@@ -15,18 +15,6 @@ public class AnalizadorLex {
     char CaracterActual;
     Stack<Integer> Pila = new Stack<>();
 
-
-    public AnalizadorLex() {
-        CadenaSigma = "";
-        PasoEdoAcept = false;
-        IniLexema = -1;
-        FinLexema = -1;
-        IndiceCaracterActual = -1;
-        token = -1;
-        Pila.clear();
-        AutomataFD = null;
-    }
-
     public AnalizadorLex(String sigma, String FileAFD) {
         AutomataFD = new AFD();
         CadenaSigma = sigma;
@@ -144,25 +132,7 @@ public class AnalizadorLex {
         return true;
     }
 
-
     public AFD getAFD() {
         return AutomataFD;
     }
-
-
-    public int getPosition() {
-        return IndiceCaracterActual;
-    }
-
-    public void reset() {
-        this.IndiceCaracterActual = 0;
-        this.Lexema = "";
-        this.PasoEdoAcept = false;
-        this.IniLexema = 0;
-        this.FinLexema = -1;
-        this.token = -1;
-        this.Pila.clear();
-    }
-
-    
 }
